@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'preact/hooks';
 import { applyDocumentLang, detectDeviceLang, I18nContext, makeT, type Lang } from './i18n';
 import { getDeviceId, getLang, getPinRecord, getSimulator, getTuning, setLang, DEFAULT_TUNING, type ScanTuning } from './db/settings';
 import { claimSingleTab } from './lib/singleTab';
+import { keyboardHub } from './scan/hub';
 import { getSession } from './db/log';
 import { Icon } from './ui/Icon';
 import { ExportScreen } from './screens/ExportScreen';
@@ -93,12 +94,19 @@ export function App() {
 
   const startSession = async (c: SessionChoice) => {
     unlockAudio(); // inside the tap that started the session
-    const session = await openSession({ ...c, deviceId });
-    setActive({
-      controller: await ScanController.load(session, deviceId, { doubleReadMs: tuning.doubleReadMs }),
-      startInReview: false,
-    });
-    setRoute('scan');
+    // Scans that arrive while the session opens wait for the scan screen.
+    keyboardHub.holdForNextConsumer();
+    try {
+      const session = await openSession({ ...c, deviceId });
+      setActive({
+        controller: await ScanController.load(session, deviceId, { doubleReadMs: tuning.doubleReadMs }),
+        startInReview: false,
+      });
+      setRoute('scan');
+    } catch (e) {
+      keyboardHub.cancelHold();
+      throw e;
+    }
   };
 
   /** After a supervisor reopened a closed session. */

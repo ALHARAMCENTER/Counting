@@ -1,19 +1,13 @@
 /**
- * Development aid: types a barcode into the scanner field the way a
- * keyboard-wedge reader does (fast key events, then Enter), so the real input
- * path is exercised.
+ * Development aid: sends a barcode the way a keyboard-wedge reader does
+ * (fast key events, then Enter) through the real app-wide input path.
  */
 export async function simulateScan(barcode: string, msPerChar = 4): Promise<void> {
-  const el = document.querySelector<HTMLInputElement>('[data-testid="scanner-input"]');
-  if (!el) return;
-  el.focus();
+  const target = document.querySelector<HTMLInputElement>('[data-scanner]') ?? document.body;
+  const key = (k: string) => target.dispatchEvent(new KeyboardEvent('keydown', { key: k, bubbles: true, cancelable: true }));
   for (const ch of barcode) {
-    el.dispatchEvent(new KeyboardEvent('keydown', { key: ch, bubbles: true }));
-    el.value += ch;
-    el.dispatchEvent(new InputEvent('input', { data: ch, inputType: 'insertText', bubbles: true }));
-    el.dispatchEvent(new KeyboardEvent('keyup', { key: ch, bubbles: true }));
+    key(ch);
     if (msPerChar) await new Promise((r) => setTimeout(r, msPerChar));
   }
-  el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', keyCode: 13, bubbles: true }));
-  el.dispatchEvent(new KeyboardEvent('keyup', { key: 'Enter', keyCode: 13, bubbles: true }));
+  key('Enter');
 }
