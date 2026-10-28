@@ -1,0 +1,27 @@
+# Dependencies & build output
+node_modules/
+dist/
+dev-dist/
+coverage/
+test-results/
+playwright-report/
+*.log
+.DS_Store
+
+# PRIVACY: never commit real inventory data.
+# Any spreadsheet / CSV file is ignored everywhere...
+*.csv
+*.xlsx
+*.xls
+*.xlsm
+*.ods
+*.tsv
+# ...as are data folders at any depth.
+data/
+private/
+**/data/
+**/private/
+
+# ...except the single fake sample file.
+!samples/
+!samples/sample-system.csv
