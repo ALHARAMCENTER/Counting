@@ -198,6 +198,7 @@ export const en = {
   section_kids: 'Kids & babies',
   section_home: 'Home furnishings',
   section_other: 'Other',
+  supervisorSettings: 'Supervisor settings',
 } as const;
 
 export type MessageKey = keyof typeof en;

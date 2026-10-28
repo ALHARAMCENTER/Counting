@@ -198,4 +198,5 @@ export const ur: Messages = {
   section_kids: 'بچے اور نومولود',
   section_home: 'گھریلو فرنشنگ',
   section_other: 'دیگر',
+  supervisorSettings: 'سپروائزر کی ترتیبات',
 };

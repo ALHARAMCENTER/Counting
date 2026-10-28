@@ -36,8 +36,6 @@ for (const [lang, dir] of [
     await firstRun(page, lang);
     await configureDevice(page);
     await page.getByTestId('open-settings').click();
-    for (const d of '2468') await page.getByTestId(`key-${d}`).click();
-    await page.getByTestId('key-ok').click();
     await page.getByTestId('open-help').click();
     await expect(page.getByTestId('help')).toBeVisible();
     await expect(page.locator('html')).toHaveAttribute('dir', dir);

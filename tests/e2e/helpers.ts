@@ -21,6 +21,7 @@ export async function firstRun(page: Page, lang: 'ar' | 'en' | 'ur', pin = '2468
  */
 export async function configureDevice(page: Page, { pin = '2468', doubleReadMs = 0 } = {}) {
   await page.getByTestId('open-settings').click();
+  await page.getByTestId('unlock-supervisor').click();
   await typePin(page, pin);
   await page.getByTestId('setup-branch').fill('BR-TEST');
   await page.getByTestId('setup-max-stand').fill('20');

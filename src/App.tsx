@@ -20,7 +20,6 @@ import { PinSetupScreen } from './screens/PinSetupScreen';
 import { HomeScreen } from './screens/HomeScreen';
 import { SettingsScreen } from './screens/SettingsScreen';
 import { InsecureScreen } from './screens/InsecureScreen';
-import { PinGate } from './ui/PinGate';
 
 type Route =
   | 'loading'
@@ -28,7 +27,6 @@ type Route =
   | 'language'
   | 'pin-setup'
   | 'home'
-  | 'settings-gate'
   | 'settings'
   | 'start-session'
   | 'scan'
@@ -52,6 +50,8 @@ export function App() {
   const [simulator, setSim] = useState(false);
   const [closedNotice, setClosedNotice] = useState(false);
   const [tuning, setTuningState] = useState<ScanTuning>(DEFAULT_TUNING);
+  // Supervisor PIN given during the current visit to settings; cleared on leaving.
+  const [supervisor, setSupervisor] = useState(false);
 
   const i18n = useMemo(() => ({ lang, t: makeT(lang) }), [lang]);
   useEffect(() => applyDocumentLang(lang), [lang]);
@@ -166,7 +166,10 @@ export function App() {
           onRetryPersist={() => requestPersistence().then(setPersist)}
           updateReady={updateReady}
           onUpdate={applyPendingUpdate}
-          onSettings={() => setRoute('settings-gate')}
+          onSettings={() => {
+            setSupervisor(false);
+            setRoute('settings');
+          }}
           onExport={() => setRoute('export')}
           onStart={() => {
             setClosedNotice(false);
@@ -176,13 +179,6 @@ export function App() {
         />
       );
       break;
-    case 'settings-gate':
-      screen = (
-        <main class="screen center">
-          <PinGate onSuccess={() => setRoute('settings')} onCancel={() => setRoute('home')} />
-        </main>
-      );
-      break;
     case 'settings':
       screen = (
         <SettingsScreen
@@ -190,12 +186,16 @@ export function App() {
           onBack={async () => {
             setSim(await getSimulator());
             setTuningState(await getTuning());
+            setSupervisor(false);
             setRoute('home');
           }}
+          unlocked={supervisor}
+          onUnlock={() => setSupervisor(true)}
           onReconcile={() => setRoute('reconcile')}
           onHelp={() => setRoute('help')}
           onWiped={() => location.reload()}
           onReopened={async (id) => {
+            setSupervisor(false);
             setSim(await getSimulator());
             setTuningState(await getTuning());
             await resumeSession(id);

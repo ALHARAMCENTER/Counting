@@ -17,12 +17,16 @@ for (const [lang, dir] of [
     await expect(page.locator('html')).toHaveAttribute('lang', lang);
     await page.screenshot({ path: `${SHOTS}/${lang}-1-home.png` });
 
-    // Wrong PIN is refused, right PIN opens settings.
+    // Settings open without the PIN; supervisor settings need it.
     await page.getByTestId('open-settings').click();
+    await expect(page.getByTestId('set-lang-en')).toBeVisible();
+    await expect(page.getByTestId('setup-branch')).toHaveCount(0);
+    await page.getByTestId('unlock-supervisor').click();
     await typePin(page, '1111');
     await expect(page.getByRole('alert')).toBeVisible();
+    await expect(page.getByTestId('setup-branch')).toHaveCount(0);
     await typePin(page, '2468');
-    await expect(page.getByTestId('set-lang-en')).toBeVisible();
+    await expect(page.getByTestId('setup-branch')).toBeVisible();
     await page.screenshot({ path: `${SHOTS}/${lang}-2-settings.png` });
 
     // No Arabic-Indic digits anywhere on screen.
@@ -38,6 +42,8 @@ test('language and PIN survive a reload; language switch flips direction', async
   await expect(page.locator('html')).toHaveAttribute('dir', 'ltr');
 
   await page.getByTestId('open-settings').click();
+
+  await page.getByTestId('unlock-supervisor').click();
   await typePin(page, '2468');
   await page.getByTestId('set-lang-ar').click();
   await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');

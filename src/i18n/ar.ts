@@ -198,4 +198,5 @@ export const ar: Messages = {
   section_kids: 'أطفال ومواليد',
   section_home: 'مفروشات',
   section_other: 'أخرى',
+  supervisorSettings: 'إعدادات المشرف',
 };

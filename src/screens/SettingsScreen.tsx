@@ -9,6 +9,7 @@ import { TuningCard } from './TuningCard';
 import { ImportCard } from './supervisor/ImportCard';
 import { MergeCard } from './supervisor/MergeCard';
 import { WipeCard } from './supervisor/WipeCard';
+import { PinGate } from '../ui/PinGate';
 
 interface Props {
   onLang: (l: Lang) => void;
@@ -17,13 +18,21 @@ interface Props {
   onReconcile: () => void;
   onHelp: () => void;
   onWiped: () => void;
+  /** Supervisor PIN given during this visit to settings. */
+  unlocked: boolean;
+  onUnlock: () => void;
 }
 
 const isIOS = () => /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
-/** Supervisor settings (reached only through the PIN gate). */
-export function SettingsScreen({ onLang, onBack, onReopened, onReconcile, onHelp, onWiped }: Props) {
+/**
+ * Settings open without the PIN (language, help, differences). Everything that
+ * can change or remove count data sits under "Supervisor settings", which asks
+ * for the PIN once per visit.
+ */
+export function SettingsScreen({ onLang, onBack, onReopened, onReconcile, onHelp, onWiped, unlocked, onUnlock }: Props) {
   const { t, lang } = useI18n();
+  const [askPin, setAskPin] = useState(false);
   const [sim, setSim] = useState(false);
   const [demoLoaded, setDemoLoaded] = useState(false);
   useEffect(() => {
@@ -72,52 +81,66 @@ export function SettingsScreen({ onLang, onBack, onReopened, onReconcile, onHelp
         </p>
       )}
 
-      <ImportCard />
-
       <button type="button" class="btn btn-huge btn-primary" onClick={onReconcile} data-testid="open-reconcile">
         {t('openReconcile')}
       </button>
 
-      <SessionsCard onReopened={onReopened} />
+      {unlocked ? (
+        <>
+          <h2 class="section-title">
+            <Icon name="lock" /> {t('supervisorSettings')}
+          </h2>
+          <ImportCard />
 
-      <MergeCard />
+          <SessionsCard onReopened={onReopened} />
 
-      <CountSetupCard />
+          <MergeCard />
 
-      <TuningCard />
+          <CountSetupCard />
 
-      <section class="card">
-        <h2>{t('simulator')}</h2>
-        <div class="row-wrap">
-          <button
-            type="button"
-            class={sim ? 'btn btn-primary' : 'btn'}
-            data-testid="sim-toggle"
-            onClick={async () => {
-              await setSimulator(!sim);
-              setSim(!sim);
-            }}
-          >
-            {sim ? t('on') : t('off')}
-          </button>
-          {sim && (
-            <button
-              type="button"
-              class="btn"
-              data-testid="load-demo"
-              onClick={async () => {
-                await replaceCatalog(DEMO_CATALOG);
-                setDemoLoaded(true);
-              }}
-            >
-              {t('loadDemo')}
-            </button>
-          )}
-        </div>
-        {demoLoaded && <p class="banner banner-ok">{t('demoLoaded')}</p>}
-      </section>
+          <TuningCard />
 
-      <WipeCard onWiped={onWiped} />
+          <section class="card">
+            <h2>{t('simulator')}</h2>
+            <div class="row-wrap">
+              <button
+                type="button"
+                class={sim ? 'btn btn-primary' : 'btn'}
+                data-testid="sim-toggle"
+                onClick={async () => {
+                  await setSimulator(!sim);
+                  setSim(!sim);
+                }}
+              >
+                {sim ? t('on') : t('off')}
+              </button>
+              {sim && (
+                <button
+                  type="button"
+                  class="btn"
+                  data-testid="load-demo"
+                  onClick={async () => {
+                    await replaceCatalog(DEMO_CATALOG);
+                    setDemoLoaded(true);
+                  }}
+                >
+                  {t('loadDemo')}
+                </button>
+              )}
+            </div>
+            {demoLoaded && <p class="banner banner-ok">{t('demoLoaded')}</p>}
+          </section>
+
+          <WipeCard onWiped={onWiped} />
+
+        </>
+      ) : askPin ? (
+        <PinGate onSuccess={onUnlock} onCancel={() => setAskPin(false)} />
+      ) : (
+        <button type="button" class="btn btn-huge" onClick={() => setAskPin(true)} data-testid="unlock-supervisor">
+          <Icon name="lock" /> {t('supervisorSettings')}
+        </button>
+      )}
 
       <section class="card">
         <h2>

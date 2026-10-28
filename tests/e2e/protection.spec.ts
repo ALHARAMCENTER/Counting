@@ -38,6 +38,7 @@ test.describe('with a configured device', () => {
 
   test('reader double read is ignored and reported in the summary', async ({ page }) => {
     await page.getByTestId('open-settings').click();
+    await page.getByTestId('unlock-supervisor').click();
     await typePin(page, '2468');
     await page.getByTestId('tune-double').fill('300');
     await page.getByTestId('tune-save').click();
@@ -94,6 +95,8 @@ test.describe('with a configured device', () => {
     await page.getByTestId('confirm-close').click();
 
     await page.getByTestId('open-settings').click();
+
+    await page.getByTestId('unlock-supervisor').click();
     await typePin(page, '2468');
     const row = page.getByTestId('session-row-men-5');
     await expect(row).toContainText('Closed');
