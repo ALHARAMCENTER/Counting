@@ -14,8 +14,12 @@ export async function firstRun(page: Page, lang: 'ar' | 'en' | 'ur', pin = '2468
   await page.getByTestId('start').waitFor();
 }
 
-/** Supervisor config: fake branch, two sections, 20 stands, demo catalogue. */
-export async function configureDevice(page: Page, pin = '2468') {
+/**
+ * Supervisor config: fake branch, two sections, 20 stands, demo catalogue.
+ * The double-read guard is off by default because tests type the same code
+ * back to back at machine speed; tests of the guard turn it on.
+ */
+export async function configureDevice(page: Page, { pin = '2468', doubleReadMs = 0 } = {}) {
   await page.getByTestId('open-settings').click();
   await typePin(page, pin);
   await page.getByTestId('setup-branch').fill('BR-TEST');
@@ -27,6 +31,8 @@ export async function configureDevice(page: Page, pin = '2468') {
   await page.getByTestId('setup-save').click();
   await page.getByTestId('sim-toggle').click();
   await page.getByTestId('load-demo').click();
+  await page.getByTestId('tune-double').fill(String(doubleReadMs));
+  await page.getByTestId('tune-save').click();
   await page.getByTestId('back').click();
 }
 

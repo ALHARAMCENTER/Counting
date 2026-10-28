@@ -5,7 +5,8 @@ import { catalogSize, DEMO_CATALOG } from '../db/catalog';
 import { summarize } from '../domain/tally';
 import { feedbackError, feedbackNotice } from '../lib/feedback';
 import { allowScreenOff, keepScreenOn } from '../lib/wakeLock';
-import type { ScanController, ScanView } from '../scan/ScanController';
+import { StaleUndoError, type ScanController, type ScanView, type UndoCandidate } from '../scan/ScanController';
+import { batteryWarning, watchBattery, type BatteryState } from '../lib/battery';
 import { ScannerInput } from '../scan/ScannerInput';
 import { simulateScan } from '../scan/simulate';
 import { Icon } from '../ui/Icon';
@@ -15,11 +16,13 @@ interface Props {
   /** Session was in 'reviewing' when the app restarted. */
   startInReview: boolean;
   simulator: boolean;
+  /** Minutes without any scan before warning (0 = off). */
+  idleMinutes: number;
   onClosed: () => void;
 }
 
 /** The worker's screen: no menus, two buttons, big numbers. */
-export function ScanScreen({ controller, startInReview, simulator, onClosed }: Props) {
+export function ScanScreen({ controller, startInReview, simulator, idleMinutes, onClosed }: Props) {
   const { t } = useI18n();
   const [view, setView] = useState<ScanView>(controller.current);
   const [reviewing, setReviewingState] = useState(startInReview);
@@ -33,7 +36,44 @@ export function ScanScreen({ controller, startInReview, simulator, onClosed }: P
   const [hasCatalog, setHasCatalog] = useState(true);
   const [busy, setBusy] = useState(false);
   const [blocked, setBlocked] = useState(false);
+  const [confirmUndo, setConfirmUndo] = useState<UndoCandidate | null>(null);
+  const [undoStale, setUndoStale] = useState(false);
+  const [battery, setBattery] = useState<BatteryState | null>(null);
+  const [idle, setIdle] = useState(false);
   const s = controller.session;
+
+  useEffect(() => watchBattery(setBattery), []);
+
+  // "No scan for a long time" warning: once per quiet period, with a sound.
+  useEffect(() => {
+    if (!idleMinutes || reviewing) {
+      setIdle(false);
+      return;
+    }
+    const check = () => {
+      const quiet = Date.now() - controller.current.lastInputAt > idleMinutes * 60_000;
+      setIdle((was) => {
+        if (quiet && !was) feedbackNotice();
+        return quiet;
+      });
+    };
+    check();
+    const timer = setInterval(check, 10_000);
+    return () => clearInterval(timer);
+  }, [controller, idleMinutes, reviewing, view.lastInputAt]);
+
+  const doUndo = async () => {
+    const target = confirmUndo;
+    setConfirmUndo(null);
+    if (!target) return;
+    try {
+      await controller.undo(target.uuid);
+      feedbackNotice();
+    } catch (e) {
+      if (e instanceof StaleUndoError) setUndoStale(true);
+      else throw e;
+    }
+  };
 
   useEffect(() => controller.subscribe(setView), [controller]);
   useEffect(() => {
@@ -154,6 +194,27 @@ export function ScanScreen({ controller, startInReview, simulator, onClosed }: P
       </header>
 
       {!hasCatalog && <p class="banner banner-info">{t('noCatalog')}</p>}
+      {batteryWarning(battery) !== 'none' && (
+        <p
+          class={batteryWarning(battery) === 'critical' ? 'banner banner-danger' : 'banner banner-warn'}
+          role="alert"
+          data-testid="battery-warning"
+        >
+          <Icon name="warning" size={22} />{' '}
+          {batteryWarning(battery) === 'critical' ? t('batteryCritical') : t('batteryLow')}{' '}
+          <bdi dir="ltr">{formatNumber(Math.round((battery?.level ?? 0) * 100))}%</bdi>
+        </p>
+      )}
+      {idle && (
+        <p class="banner banner-warn" role="alert" data-testid="idle-warning">
+          <Icon name="warning" size={22} /> {t('idleTitle', { n: idleMinutes })}. {t('idleBody')}
+        </p>
+      )}
+      {undoStale && (
+        <p class="banner banner-warn" role="alert" data-testid="undo-stale">
+          <Icon name="warning" size={22} /> {t('undoStale')}
+        </p>
+      )}
 
       <section class="last" data-testid="last">
         {last ? (
@@ -164,6 +225,11 @@ export function ScanScreen({ controller, startInReview, simulator, onClosed }: P
             <bdi class="last-barcode" dir="ltr" data-testid="last-barcode">
               {last.barcode}
             </bdi>
+            {last.undone && (
+              <div class="badge-undone" data-testid="undone">
+                <Icon name="undo" size={22} /> {t('undone')}
+              </div>
+            )}
             <div class="last-count">
               <bdi dir="ltr" data-testid="last-count">
                 ×{formatNumber(last.countInSession)}
@@ -184,8 +250,16 @@ export function ScanScreen({ controller, startInReview, simulator, onClosed }: P
       </div>
 
       <footer class="scan-actions">
-        {/* Undo arrives in phase C. */}
-        <button type="button" class="btn btn-huge" disabled data-testid="undo">
+        <button
+          type="button"
+          class="btn btn-huge"
+          disabled={!view.undoable || busy}
+          onClick={() => {
+            setUndoStale(false);
+            setConfirmUndo(view.undoable);
+          }}
+          data-testid="undo"
+        >
           <Icon name="undo" /> {t('undo')}
         </button>
         <button type="button" class="btn btn-huge btn-primary" disabled={busy} onClick={startReview} data-testid="finish">
@@ -194,6 +268,28 @@ export function ScanScreen({ controller, startInReview, simulator, onClosed }: P
       </footer>
 
       {simulator && <SimulatorPanel />}
+
+      {confirmUndo && (
+        <div class="dialog-backdrop">
+          <div class="dialog" role="dialog" data-testid="undo-dialog">
+            <h2>
+              <Icon name="undo" /> {t('undoConfirmTitle')}
+            </h2>
+            <p class="dialog-name">{confirmUndo.name ?? t('unknownItem')}</p>
+            <bdi dir="ltr" class="last-barcode">
+              {confirmUndo.barcode}
+            </bdi>
+            <div class="scan-actions">
+              <button type="button" class="btn btn-huge" onClick={() => setConfirmUndo(null)} data-testid="undo-no">
+                {t('undoNo')}
+              </button>
+              <button type="button" class="btn btn-huge btn-danger" onClick={doUndo} data-testid="undo-yes">
+                <Icon name="undo" /> {t('undoYes')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {alert && (
         <div class="alert-overlay" role="alertdialog" data-testid="alert">

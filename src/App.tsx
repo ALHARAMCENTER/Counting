@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState } from 'preact/hooks';
 import { applyDocumentLang, detectDeviceLang, I18nContext, makeT, type Lang } from './i18n';
-import { getDeviceId, getLang, getPinRecord, getSimulator, setLang } from './db/settings';
+import { getDeviceId, getLang, getPinRecord, getSimulator, getTuning, setLang, DEFAULT_TUNING, type ScanTuning } from './db/settings';
+import { claimSingleTab } from './lib/singleTab';
+import { getSession } from './db/log';
+import { Icon } from './ui/Icon';
 import { findActiveSession, openSession } from './db/log';
 import { ScanController } from './scan/ScanController';
 import { unlockAudio } from './lib/feedback';
@@ -24,7 +27,8 @@ type Route =
   | 'settings-gate'
   | 'settings'
   | 'start-session'
-  | 'scan';
+  | 'scan'
+  | 'other-tab';
 
 interface ActiveScan {
   controller: ScanController;
@@ -40,6 +44,7 @@ export function App() {
   const [active, setActive] = useState<ActiveScan | null>(null);
   const [simulator, setSim] = useState(false);
   const [closedNotice, setClosedNotice] = useState(false);
+  const [tuning, setTuningState] = useState<ScanTuning>(DEFAULT_TUNING);
 
   const i18n = useMemo(() => ({ lang, t: makeT(lang) }), [lang]);
   useEffect(() => applyDocumentLang(lang), [lang]);
@@ -52,9 +57,13 @@ export function App() {
       return;
     }
     (async () => {
+      // A second window would also listen to the reader: refuse it.
+      if (!(await claimSingleTab())) return setRoute('other-tab');
       const id = await getDeviceId();
       setDeviceId(id);
       setSim(await getSimulator());
+      const tune = await getTuning();
+      setTuningState(tune);
       const saved = await getLang();
       if (!saved) return setRoute('language');
       setLangState(saved);
@@ -62,7 +71,10 @@ export function App() {
       // Back to the session that was open when the app stopped.
       const open = await findActiveSession();
       if (open) {
-        setActive({ controller: await ScanController.load(open.session, id), startInReview: open.state === 'reviewing' });
+        setActive({
+          controller: await ScanController.load(open.session, id, { doubleReadMs: tune.doubleReadMs }),
+          startInReview: open.state === 'reviewing',
+        });
         return setRoute('scan');
       }
       setRoute('home');
@@ -76,7 +88,21 @@ export function App() {
   const startSession = async (c: SessionChoice) => {
     unlockAudio(); // inside the tap that started the session
     const session = await openSession({ ...c, deviceId });
-    setActive({ controller: await ScanController.load(session, deviceId), startInReview: false });
+    setActive({
+      controller: await ScanController.load(session, deviceId, { doubleReadMs: tuning.doubleReadMs }),
+      startInReview: false,
+    });
+    setRoute('scan');
+  };
+
+  /** After a supervisor reopened a closed session. */
+  const resumeSession = async (sessionId: string) => {
+    const session = await getSession(sessionId);
+    if (!session) return;
+    setActive({
+      controller: await ScanController.load(session, deviceId, { doubleReadMs: tuning.doubleReadMs }),
+      startInReview: false,
+    });
     setRoute('scan');
   };
 
@@ -92,6 +118,18 @@ export function App() {
       break;
     case 'insecure':
       screen = <InsecureScreen />;
+      break;
+    case 'other-tab':
+      screen = (
+        <main class="screen center danger" data-testid="other-tab">
+          <Icon name="warning" size={64} />
+          <h1>{i18n.t('otherTabTitle')}</h1>
+          <p>{i18n.t('otherTabBody')}</p>
+          <button type="button" class="btn btn-huge" onClick={() => location.reload()}>
+            <Icon name="refresh" /> {i18n.t('retry')}
+          </button>
+        </main>
+      );
       break;
     case 'language':
       screen = (
@@ -136,7 +174,13 @@ export function App() {
           onLang={pickLang}
           onBack={async () => {
             setSim(await getSimulator());
+            setTuningState(await getTuning());
             setRoute('home');
+          }}
+          onReopened={async (id) => {
+            setSim(await getSimulator());
+            setTuningState(await getTuning());
+            await resumeSession(id);
           }}
         />
       );
@@ -151,6 +195,7 @@ export function App() {
           controller={active.controller}
           startInReview={active.startInReview}
           simulator={simulator}
+          idleMinutes={tuning.idleMinutes}
           onClosed={() => {
             setActive(null);
             setClosedNotice(true);

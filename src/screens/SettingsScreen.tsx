@@ -4,14 +4,19 @@ import { getSimulator, setSimulator } from '../db/settings';
 import { DEMO_CATALOG, replaceCatalog } from '../db/catalog';
 import { Icon } from '../ui/Icon';
 import { CountSetupCard } from './CountSetupCard';
+import { SessionsCard } from './SessionsCard';
+import { TuningCard } from './TuningCard';
 
 interface Props {
   onLang: (l: Lang) => void;
   onBack: () => void;
+  onReopened: (sessionId: string) => void;
 }
 
+const isIOS = () => /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
 /** Supervisor settings (reached only through the PIN gate). */
-export function SettingsScreen({ onLang, onBack }: Props) {
+export function SettingsScreen({ onLang, onBack, onReopened }: Props) {
   const { t, lang } = useI18n();
   const [sim, setSim] = useState(false);
   const [demoLoaded, setDemoLoaded] = useState(false);
@@ -51,7 +56,17 @@ export function SettingsScreen({ onLang, onBack }: Props) {
         </div>
       </section>
 
+      {isIOS() && (
+        <p class="banner banner-warn" data-testid="ios-note">
+          <Icon name="warning" size={22} /> {t('iosNote')}
+        </p>
+      )}
+
+      <SessionsCard onReopened={onReopened} />
+
       <CountSetupCard />
+
+      <TuningCard />
 
       <section class="card">
         <h2>{t('simulator')}</h2>
