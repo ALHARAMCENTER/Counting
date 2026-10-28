@@ -5,12 +5,10 @@ export async function typePin(page: Page, pin: string) {
   await page.getByTestId('key-ok').click();
 }
 
-/** Language → PIN (twice) → home. */
-export async function firstRun(page: Page, lang: 'ar' | 'en' | 'ur', pin = '2468') {
+/** First run: language → home (the supervisor PIN is fixed, nothing to create). */
+export async function firstRun(page: Page, lang: 'ar' | 'en' | 'ur') {
   await page.goto('./');
   await page.getByTestId(`lang-${lang}`).click();
-  await typePin(page, pin);
-  await typePin(page, pin);
   await page.getByTestId('start').waitFor();
 }
 
@@ -19,7 +17,7 @@ export async function firstRun(page: Page, lang: 'ar' | 'en' | 'ur', pin = '2468
  * The double-read guard is off by default because tests type the same code
  * back to back at machine speed; tests of the guard turn it on.
  */
-export async function configureDevice(page: Page, { pin = '2468', doubleReadMs = 0 } = {}) {
+export async function configureDevice(page: Page, { pin = '2000', doubleReadMs = 0 } = {}) {
   await page.getByTestId('open-settings').click();
   await page.getByTestId('unlock-supervisor').click();
   await typePin(page, pin);

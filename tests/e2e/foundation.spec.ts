@@ -25,7 +25,7 @@ for (const [lang, dir] of [
     await typePin(page, '1111');
     await expect(page.getByRole('alert')).toBeVisible();
     await expect(page.getByTestId('setup-branch')).toHaveCount(0);
-    await typePin(page, '2468');
+    await typePin(page, '2000');
     await expect(page.getByTestId('setup-branch')).toBeVisible();
     await page.screenshot({ path: `${SHOTS}/${lang}-2-settings.png` });
 
@@ -44,20 +44,11 @@ test('language and PIN survive a reload; language switch flips direction', async
   await page.getByTestId('open-settings').click();
 
   await page.getByTestId('unlock-supervisor').click();
-  await typePin(page, '2468');
+  await typePin(page, '2000');
   await page.getByTestId('set-lang-ar').click();
   await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
   await page.reload();
   await expect(page.locator('html')).toHaveAttribute('lang', 'ar');
-});
-
-test('PIN confirmation mismatch starts over', async ({ page }) => {
-  await page.goto('./');
-  await page.getByTestId('lang-en').click();
-  await typePin(page, '1234');
-  await typePin(page, '9999');
-  await expect(page.getByRole('alert')).toBeVisible();
-  await expect(page.getByTestId('start')).toHaveCount(0);
 });
 
 test('works offline after the first visit (service worker)', async ({ page, context }) => {

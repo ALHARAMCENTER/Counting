@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'preact/hooks';
 import { applyDocumentLang, detectDeviceLang, I18nContext, makeT, type Lang } from './i18n';
-import { getDeviceId, getLang, getPinRecord, getSimulator, getTuning, setLang, DEFAULT_TUNING, type ScanTuning } from './db/settings';
+import { getDeviceId, getLang, getSimulator, getTuning, setLang, DEFAULT_TUNING, type ScanTuning } from './db/settings';
 import { claimSingleTab } from './lib/singleTab';
 import { keyboardHub } from './scan/hub';
 import { getSession } from './db/log';
@@ -16,7 +16,6 @@ import { ScanScreen } from './screens/ScanScreen';
 import { requestPersistence, type PersistState } from './lib/storage';
 import { applyPendingUpdate, onUpdateReady } from './lib/sw';
 import { LanguageScreen } from './screens/LanguageScreen';
-import { PinSetupScreen } from './screens/PinSetupScreen';
 import { HomeScreen } from './screens/HomeScreen';
 import { SettingsScreen } from './screens/SettingsScreen';
 import { InsecureScreen } from './screens/InsecureScreen';
@@ -25,7 +24,6 @@ type Route =
   | 'loading'
   | 'insecure'
   | 'language'
-  | 'pin-setup'
   | 'home'
   | 'settings'
   | 'start-session'
@@ -74,7 +72,6 @@ export function App() {
       const saved = await getLang();
       if (!saved) return setRoute('language');
       setLangState(saved);
-      if (!(await getPinRecord())) return setRoute('pin-setup');
       // Back to the session that was open when the app stopped.
       const open = await findActiveSession();
       if (open) {
@@ -151,13 +148,10 @@ export function App() {
           current={lang}
           onPick={async (l) => {
             await pickLang(l);
-            setRoute((await getPinRecord()) ? 'home' : 'pin-setup');
+            setRoute('home');
           }}
         />
       );
-      break;
-    case 'pin-setup':
-      screen = <PinSetupScreen onDone={() => setRoute('home')} />;
       break;
     case 'home':
       screen = (

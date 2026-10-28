@@ -11,13 +11,7 @@ export const ar: Messages = {
   ok: 'موافق',
   retry: 'حاول مرة أخرى',
 
-  pinSetupTitle: 'أنشئ رمز المشرف',
-  pinSetupHint: 'يعرفه المشرف فقط.',
   pinNotSecurity: 'الرمز يمنع الأخطاء. ليس قفلًا أمنيًا.',
-  pinEnter: 'أدخل الرمز',
-  pinConfirm: 'أدخل الرمز مرة أخرى',
-  pinMismatch: 'الرمزان غير متطابقين.',
-  pinTooShort: 'استخدم من 4 إلى 8 أرقام.',
   pinWrong: 'رمز خاطئ.',
   pinRequired: 'رمز المشرف',
 

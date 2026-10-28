@@ -11,13 +11,7 @@ export const ur: Messages = {
   ok: 'ٹھیک ہے',
   retry: 'دوبارہ کوشش کریں',
 
-  pinSetupTitle: 'سپروائزر PIN بنائیں',
-  pinSetupHint: 'صرف سپروائزر کو معلوم ہو۔',
   pinNotSecurity: 'PIN غلطیاں روکتا ہے۔ یہ حفاظتی تالا نہیں ہے۔',
-  pinEnter: 'PIN درج کریں',
-  pinConfirm: 'PIN دوبارہ درج کریں',
-  pinMismatch: 'دونوں PIN ایک جیسے نہیں۔',
-  pinTooShort: '4 سے 8 ہندسے استعمال کریں۔',
   pinWrong: 'غلط PIN۔',
   pinRequired: 'سپروائزر PIN',
 

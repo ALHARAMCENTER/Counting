@@ -10,13 +10,7 @@ export const en = {
   ok: 'OK',
   retry: 'Try again',
 
-  pinSetupTitle: 'Create supervisor PIN',
-  pinSetupHint: 'Only the supervisor should know it.',
   pinNotSecurity: 'The PIN stops mistakes. It is not a security lock.',
-  pinEnter: 'Enter PIN',
-  pinConfirm: 'Enter PIN again',
-  pinMismatch: 'PINs do not match.',
-  pinTooShort: 'Use 4 to 8 digits.',
   pinWrong: 'Wrong PIN.',
   pinRequired: 'Supervisor PIN',
 

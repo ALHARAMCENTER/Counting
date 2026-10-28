@@ -15,7 +15,7 @@ const SYSTEM_CSV = [
 async function openSettings(page: Page) {
   await page.getByTestId('open-settings').click();
   await page.getByTestId('unlock-supervisor').click();
-  await typePin(page, '2468');
+  await typePin(page, '2000');
 }
 
 async function importSystemFile(page: Page, name: string, content: string | Buffer) {
