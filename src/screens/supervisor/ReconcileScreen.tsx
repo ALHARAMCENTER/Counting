@@ -146,7 +146,7 @@ export function ReconcileScreen({ onBack }: { onBack: () => void }) {
               <table class="diff-table" data-testid="diff-table">
                 <thead>
                   <tr>
-                    <th>{t('colBarcode')}</th>
+                    <th>{t('barcodeLabel')}</th>
                     <th>{t('systemQty')}</th>
                     <th>{t('countedQty')}</th>
                     <th>{t('diff')}</th>

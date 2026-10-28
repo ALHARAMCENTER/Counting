@@ -5,6 +5,7 @@ import { claimSingleTab } from './lib/singleTab';
 import { getSession } from './db/log';
 import { Icon } from './ui/Icon';
 import { ExportScreen } from './screens/ExportScreen';
+import { HelpScreen } from './screens/HelpScreen';
 import { ReconcileScreen } from './screens/supervisor/ReconcileScreen';
 import { findActiveSession, openSession } from './db/log';
 import { ScanController } from './scan/ScanController';
@@ -32,7 +33,8 @@ type Route =
   | 'scan'
   | 'other-tab'
   | 'export'
-  | 'reconcile';
+  | 'reconcile'
+  | 'help';
 
 interface ActiveScan {
   controller: ScanController;
@@ -183,6 +185,7 @@ export function App() {
             setRoute('home');
           }}
           onReconcile={() => setRoute('reconcile')}
+          onHelp={() => setRoute('help')}
           onWiped={() => location.reload()}
           onReopened={async (id) => {
             setSim(await getSimulator());
@@ -194,6 +197,9 @@ export function App() {
       break;
     case 'export':
       screen = <ExportScreen onBack={() => setRoute('home')} />;
+      break;
+    case 'help':
+      screen = <HelpScreen onBack={() => setRoute('settings')} />;
       break;
     case 'reconcile':
       screen = <ReconcileScreen onBack={() => setRoute('settings')} />;

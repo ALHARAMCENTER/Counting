@@ -15,13 +15,14 @@ interface Props {
   onBack: () => void;
   onReopened: (sessionId: string) => void;
   onReconcile: () => void;
+  onHelp: () => void;
   onWiped: () => void;
 }
 
 const isIOS = () => /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
 /** Supervisor settings (reached only through the PIN gate). */
-export function SettingsScreen({ onLang, onBack, onReopened, onReconcile, onWiped }: Props) {
+export function SettingsScreen({ onLang, onBack, onReopened, onReconcile, onHelp, onWiped }: Props) {
   const { t, lang } = useI18n();
   const [sim, setSim] = useState(false);
   const [demoLoaded, setDemoLoaded] = useState(false);
@@ -39,6 +40,10 @@ export function SettingsScreen({ onLang, onBack, onReopened, onReconcile, onWipe
           <Icon name="gear" /> {t('settings')}
         </h1>
       </header>
+
+      <button type="button" class="btn" onClick={onHelp} data-testid="open-help">
+        {t('help')}
+      </button>
 
       <section class="card">
         <h2>

@@ -581,12 +581,19 @@ h2 {
 .diff-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 1rem;
+  font-size: 0.95rem;
+  table-layout: fixed;
+}
+.diff-table th:first-child {
+  width: 46%;
+}
+.diff-table td:first-child {
+  word-break: break-all;
 }
 .diff-table th,
 .diff-table td {
   border-bottom: 1px solid #c8c8c8;
-  padding: 6px 8px;
+  padding: 6px 4px;
   text-align: start;
   vertical-align: top;
 }
@@ -597,4 +604,12 @@ h2 {
 }
 .good {
   color: var(--ok);
+}
+
+.help-list {
+  margin: 0;
+  padding-inline-start: 1.4em;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
