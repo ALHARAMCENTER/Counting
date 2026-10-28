@@ -1,0 +1,287 @@
+/* High-contrast, large-target UI. Logical properties only (inline-start/end)
+   so the same rules work in RTL (Arabic, Urdu) and LTR (English). */
+:root {
+  --bg: #ffffff;
+  --fg: #0a0a0a;
+  --muted: #4a4a4a;
+  --primary: #0b3d91;
+  --primary-fg: #ffffff;
+  --ok: #0a7a2f;
+  --ok-bg: #e3f6e8;
+  --warn: #8a4b00;
+  --warn-bg: #fff1d6;
+  --danger: #b00020;
+  --danger-bg: #ffe3e6;
+  --info-bg: #e3ecfb;
+  --border: #1f1f1f;
+  --radius: 14px;
+  font-family: system-ui, 'Noto Sans', 'Noto Naskh Arabic', 'Noto Sans Arabic', sans-serif;
+  font-size: 20px;
+  line-height: 1.45;
+  color: var(--fg);
+  background: var(--bg);
+  -webkit-text-size-adjust: 100%;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  margin: 0;
+  min-height: 100%;
+  height: 100%;
+  background: var(--bg);
+}
+
+body {
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+h1,
+h2,
+p {
+  margin: 0;
+}
+
+h1 {
+  font-size: 1.6rem;
+}
+h2 {
+  font-size: 1.25rem;
+}
+
+.screen {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
+}
+.center {
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+.grow {
+  flex: 1;
+}
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  max-width: 520px;
+  margin-inline: auto;
+}
+.row-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.topbar h1 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.footer {
+  display: flex;
+  justify-content: center;
+}
+
+.title-multi {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.icon {
+  flex: none;
+  vertical-align: middle;
+}
+[dir='rtl'] .flip-rtl {
+  transform: scaleX(-1);
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 56px;
+  padding: 10px 20px;
+  font: inherit;
+  font-weight: 700;
+  color: var(--fg);
+  background: #f2f2f2;
+  border: 3px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  touch-action: manipulation;
+  user-select: none;
+}
+.btn:active:not(:disabled) {
+  transform: scale(0.98);
+}
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.btn:focus-visible {
+  outline: 4px solid #ffb300;
+  outline-offset: 2px;
+}
+.btn-primary {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--primary-fg);
+}
+.btn-secondary {
+  background: #ffffff;
+}
+.btn-huge {
+  min-height: 88px;
+  font-size: 1.6rem;
+  width: 100%;
+}
+.btn-small {
+  min-height: 44px;
+  font-size: 0.95rem;
+  padding: 6px 14px;
+}
+.btn-icon {
+  min-height: 56px;
+  min-width: 56px;
+  padding: 0;
+}
+
+/* Banners */
+.banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  border: 3px solid;
+  font-weight: 600;
+}
+.banner p {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 200px;
+}
+.banner-ok {
+  background: var(--ok-bg);
+  border-color: var(--ok);
+  color: var(--ok);
+}
+.banner-warn {
+  background: var(--warn-bg);
+  border-color: var(--warn);
+  color: var(--warn);
+}
+.banner-info {
+  background: var(--info-bg);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.card {
+  border: 2px solid #c8c8c8;
+  border-radius: var(--radius);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.card h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hint {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+.error {
+  color: var(--danger);
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.danger {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+/* PIN pad */
+.pinpad {
+  width: 100%;
+  max-width: 360px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 14px;
+  text-align: center;
+}
+.pinpad h2 {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+}
+.pin-dots {
+  font-size: 2rem;
+  letter-spacing: 0.3em;
+  min-height: 3rem;
+  border-bottom: 3px solid var(--border);
+}
+.pin-placeholder {
+  color: #b0b0b0;
+}
+.keys {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+.key {
+  min-height: 72px;
+  font: inherit;
+  font-size: 1.8rem;
+  font-weight: 700;
+  border: 3px solid var(--border);
+  border-radius: var(--radius);
+  background: #fafafa;
+  color: var(--fg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: manipulation;
+}
+.key:active {
+  background: #e0e0e0;
+}
+.key-muted {
+  background: #eeeeee;
+}
+.key-ok {
+  background: var(--ok);
+  border-color: var(--ok);
+  color: #ffffff;
+}
