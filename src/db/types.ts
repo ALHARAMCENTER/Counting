@@ -81,11 +81,14 @@ export interface SettingRow {
 export interface ExportLogRow {
   id?: number;
   ts: string;
-  scope: 'session' | 'all' | 'diff' | 'backup';
+  scope: 'session' | 'all' | 'diff' | 'backup' | 'backup-all';
   sessionId?: string;
   fileName: string;
   totalScans: number;
   checksum: string;
   /** Set when the supervisor confirmed that the file arrived and opened. */
   confirmedAt?: string;
+  /** Rows in the database when the file was made (wipe safety check). */
+  dbEvents?: number;
+  dbSessionEvents?: number;
 }

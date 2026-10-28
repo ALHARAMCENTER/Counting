@@ -3,6 +3,7 @@ import type { ScanEvent, ScanEventType, Session, SessionEvent, SessionEventType 
 import { InvalidTransitionError, nextState, replayState, type SessionState } from '../domain/sessionState';
 import { newId } from '../lib/id';
 import { computeTally } from '../domain/tally';
+import { getDeviceId } from './settings';
 
 const now = () => new Date().toISOString();
 
@@ -31,7 +32,7 @@ export async function appendSessionEvent(sessionId: string, type: SessionEventTy
 export async function openSession(info: Omit<Session, 'id' | 'createdAt'>): Promise<Session> {
   const db = getDB();
   const session: Session = { ...info, id: newId(), createdAt: now() };
-  await db.transaction('rw', db.sessions, db.sessionEvents, async () => {
+  await db.transaction('rw', db.sessions, db.sessionEvents, db.settings, async () => {
     // One open session per device: a second one would split the count.
     if (await findActiveSession()) throw new AnotherSessionOpenError();
     await db.sessions.add(session);
@@ -49,7 +50,11 @@ export async function listSessions(): Promise<{ session: Session; state: Session
 
 /** The session the device should return to after a restart, if any. */
 export async function findActiveSession(): Promise<{ session: Session; state: SessionState } | null> {
-  for (const s of await listSessions()) if (s.state === 'active' || s.state === 'reviewing') return s;
+  // Sessions merged from other devices are never resumed here.
+  const deviceId = await getDeviceId();
+  for (const s of await listSessions()) {
+    if (s.session.deviceId === deviceId && (s.state === 'active' || s.state === 'reviewing')) return s;
+  }
   return null;
 }
 
@@ -112,7 +117,7 @@ export async function sessionOverview(): Promise<{ session: Session; state: Sess
  */
 export async function reopenSession(sessionId: string): Promise<void> {
   const db = getDB();
-  await db.transaction('rw', db.sessions, db.sessionEvents, async () => {
+  await db.transaction('rw', db.sessions, db.sessionEvents, db.settings, async () => {
     const open = await findActiveSession();
     if (open && open.session.id !== sessionId) throw new AnotherSessionOpenError();
     await appendSessionEvent(sessionId, 'reopen');

@@ -1,10 +1,12 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
+import { setSetting } from '../../src/db/settings';
 import { useFreshDB } from './helpers';
 import { appendScan, appendSessionEvent, findActiveSession, getSessionScans, getSessionState, openSession } from '../../src/db/log';
 import { replaceCatalog } from '../../src/db/catalog';
 import { ScanController } from '../../src/scan/ScanController';
 
 const db = useFreshDB();
+beforeEach(() => setSetting('deviceId', 'dev'));
 const info = { deviceId: 'dev', branch: 'BR-TEST', section: 'SEC-A', stand: 3, employee: 'Tester' };
 
 describe('session log', () => {

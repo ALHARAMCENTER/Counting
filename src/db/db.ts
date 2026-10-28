@@ -54,7 +54,7 @@ export function getDB(): CountingDB {
   return instance;
 }
 
-/** Test helper: use a fresh, isolated database. */
-export function setDBForTests(db: CountingDB | null): void {
+/** Switches to another database instance (tests; re-open after a wipe). */
+export function setDB(db: CountingDB | null): void {
   instance = db;
 }
