@@ -15,7 +15,8 @@
   },
   "dependencies": {
     "dexie": "4.4.7",
-    "preact": "10.29.8"
+    "preact": "10.29.8",
+    "xlsx": "file:vendor/xlsx-0.20.3.tgz"
   },
   "devDependencies": {
     "@playwright/test": "1.63.0",
