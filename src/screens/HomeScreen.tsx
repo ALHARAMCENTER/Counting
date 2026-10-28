@@ -1,4 +1,7 @@
+import { useState } from 'preact/hooks';
 import { useI18n } from '../i18n';
+import { feedbackError } from '../lib/feedback';
+import { ScannerInput } from '../scan/ScannerInput';
 import type { PersistState } from '../lib/storage';
 import { Icon } from '../ui/Icon';
 import { StorageBanner } from '../ui/StorageBanner';
@@ -9,15 +12,36 @@ interface Props {
   updateReady: boolean;
   onUpdate: () => void;
   onSettings: () => void;
+  onStart: () => void;
+  closedNotice: boolean;
 }
 
-export function HomeScreen({ persist, onRetryPersist, updateReady, onUpdate, onSettings }: Props) {
+export function HomeScreen({ persist, onRetryPersist, updateReady, onUpdate, onSettings, onStart, closedNotice }: Props) {
   const { t } = useI18n();
+  const [blocked, setBlocked] = useState(false);
   return (
     <main class="screen">
+      {/* No session open: a scan here is refused loudly, never silently lost. */}
+      <ScannerInput
+        active
+        onLine={() => {
+          feedbackError();
+          setBlocked(true);
+        }}
+      />
       <header class="topbar">
         <h1>{t('homeTitle')}</h1>
       </header>
+      {blocked && (
+        <p class="banner banner-warn" role="alert" data-testid="not-saved">
+          <Icon name="warning" size={22} /> {t('notSaved')}
+        </p>
+      )}
+      {closedNotice && (
+        <p class="banner banner-ok" data-testid="closed-notice">
+          <Icon name="check" size={22} /> {t('sessionClosed')}
+        </p>
+      )}
       <StorageBanner state={persist} onRetry={onRetryPersist} />
       {updateReady && (
         <div class="banner banner-info" data-testid="update-banner">
@@ -28,8 +52,7 @@ export function HomeScreen({ persist, onRetryPersist, updateReady, onUpdate, onS
         </div>
       )}
       <div class="stack grow center">
-        {/* Session flow arrives in phase B. */}
-        <button type="button" class="btn btn-huge btn-primary" disabled data-testid="start">
+        <button type="button" class="btn btn-huge btn-primary" onClick={onStart} data-testid="start">
           <Icon name="play" /> {t('startCount')}
         </button>
       </div>

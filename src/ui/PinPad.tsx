@@ -9,16 +9,17 @@ interface Props {
   busy?: boolean;
   onSubmit: (pin: string) => void;
   onCancel?: () => void;
+  /** false: show the digits (e.g. stand number) instead of dots. */
+  mask?: boolean;
+  maxLength?: number;
 }
 
-const MAX = 8;
-
 /** Large on-screen keypad. Digits are always Latin and laid out left-to-right. */
-export function PinPad({ title, hint, error, busy, onSubmit, onCancel }: Props) {
+export function PinPad({ title, hint, error, busy, onSubmit, onCancel, mask = true, maxLength = 8 }: Props) {
   const { t } = useI18n();
   const [pin, setPin] = useState('');
 
-  const press = (d: string) => setPin((p) => (p.length < MAX ? p + d : p));
+  const press = (d: string) => setPin((p) => (p.length < maxLength ? p + d : p));
   const del = () => setPin((p) => p.slice(0, -1));
   const submit = () => {
     if (busy) return;
@@ -29,11 +30,11 @@ export function PinPad({ title, hint, error, busy, onSubmit, onCancel }: Props) 
   return (
     <div class="pinpad">
       <h2>
-        <Icon name="lock" /> {title}
+        {mask && <Icon name="lock" />} {title}
       </h2>
       {hint && <p class="hint">{hint}</p>}
       <div class="pin-dots" dir="ltr" aria-live="polite" data-testid="pin-dots">
-        {pin.length === 0 ? <span class="pin-placeholder">----</span> : '●'.repeat(pin.length)}
+        {pin.length === 0 ? <span class="pin-placeholder">----</span> : mask ? '●'.repeat(pin.length) : pin}
       </div>
       {error && (
         <p class="error" role="alert">

@@ -1,5 +1,9 @@
+import { useEffect, useState } from 'preact/hooks';
 import { catalogs, DIR, LANGS, useI18n, type Lang } from '../i18n';
+import { getSimulator, setSimulator } from '../db/settings';
+import { DEMO_CATALOG, replaceCatalog } from '../db/catalog';
 import { Icon } from '../ui/Icon';
+import { CountSetupCard } from './CountSetupCard';
 
 interface Props {
   onLang: (l: Lang) => void;
@@ -9,6 +13,12 @@ interface Props {
 /** Supervisor settings (reached only through the PIN gate). */
 export function SettingsScreen({ onLang, onBack }: Props) {
   const { t, lang } = useI18n();
+  const [sim, setSim] = useState(false);
+  const [demoLoaded, setDemoLoaded] = useState(false);
+  useEffect(() => {
+    getSimulator().then(setSim);
+  }, []);
+
   return (
     <main class="screen">
       <header class="topbar">
@@ -39,6 +49,39 @@ export function SettingsScreen({ onLang, onBack }: Props) {
             </button>
           ))}
         </div>
+      </section>
+
+      <CountSetupCard />
+
+      <section class="card">
+        <h2>{t('simulator')}</h2>
+        <div class="row-wrap">
+          <button
+            type="button"
+            class={sim ? 'btn btn-primary' : 'btn'}
+            data-testid="sim-toggle"
+            onClick={async () => {
+              await setSimulator(!sim);
+              setSim(!sim);
+            }}
+          >
+            {sim ? t('on') : t('off')}
+          </button>
+          {sim && (
+            <button
+              type="button"
+              class="btn"
+              data-testid="load-demo"
+              onClick={async () => {
+                await replaceCatalog(DEMO_CATALOG);
+                setDemoLoaded(true);
+              }}
+            >
+              {t('loadDemo')}
+            </button>
+          )}
+        </div>
+        {demoLoaded && <p class="banner banner-ok">{t('demoLoaded')}</p>}
       </section>
 
       <section class="card">
