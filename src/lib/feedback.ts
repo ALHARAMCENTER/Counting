@@ -6,6 +6,9 @@ let ctx: AudioContext | null = null;
 
 export function unlockAudio(): void {
   try {
+    // iPhone: play through the media channel even when the silent switch is on.
+    const session = (navigator as Navigator & { audioSession?: { type: string } }).audioSession;
+    if (session) session.type = 'playback';
     ctx ??= new AudioContext();
     if (ctx.state === 'suspended') void ctx.resume();
     // A silent blip finishes the unlock on some Android builds.
