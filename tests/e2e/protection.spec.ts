@@ -95,7 +95,7 @@ test.describe('with a configured device', () => {
 
     await page.getByTestId('open-settings').click();
     await typePin(page, '2468');
-    const row = page.getByTestId('session-row-SEC-A-5');
+    const row = page.getByTestId('session-row-men-5');
     await expect(row).toContainText('Closed');
     await row.getByTestId('reopen').click();
     await row.getByTestId('reopen-confirm').click();
@@ -152,7 +152,7 @@ test('browser closed in the middle of a session: back to the same session', asyn
     page = ctx.pages()[0] ?? (await ctx.newPage());
     await page.goto('./');
     await expect(page.getByTestId('total')).toHaveText('12');
-    await expect(page.locator('.scan-top')).toContainText('SEC-A');
+    await expect(page.locator('.scan-top')).toContainText('رجالي'); // Arabic UI
     await scan(page, '0000000001');
     await expect(page.getByTestId('total')).toHaveText('13');
     await ctx.close();

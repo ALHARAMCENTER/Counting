@@ -10,7 +10,7 @@ test('start flow shows branch, section, stand on the scan screen', async ({ page
   await startSession(page, { section: 1, stand: '12' });
   const top = page.locator('.scan-top');
   await expect(top).toContainText('BR-TEST');
-  await expect(top).toContainText('SEC-B');
+  await expect(top).toContainText('Women');
   await expect(top).toContainText('12');
   await expect(page.getByTestId('total')).toHaveText('0');
 });

@@ -39,18 +39,18 @@ export async function getDeviceId(): Promise<string> {
   });
 }
 
-/** Supervisor-defined session choices for this device. */
+/** Session choices for this device. Sections are the fixed list in domain/sections. */
 export interface CountSetup {
   branch: string;
-  sections: string[];
   /** Stands are picked by number from 1..maxStand. */
   maxStand: number;
 }
 
-export const DEFAULT_SETUP: CountSetup = { branch: '', sections: [], maxStand: 50 };
+export const DEFAULT_SETUP: CountSetup = { branch: '', maxStand: 50 };
 
 export async function getCountSetup(): Promise<CountSetup> {
-  return { ...DEFAULT_SETUP, ...(await getSetting<Partial<CountSetup>>('setup')) };
+  const saved = await getSetting<Partial<CountSetup>>('setup');
+  return { branch: saved?.branch ?? DEFAULT_SETUP.branch, maxStand: saved?.maxStand ?? DEFAULT_SETUP.maxStand };
 }
 export const setCountSetup = (s: CountSetup) => setSetting('setup', s);
 

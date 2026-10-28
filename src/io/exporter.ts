@@ -8,6 +8,7 @@ import { buildCountBundle, checkRow, type CountBundle, type SessionWithLog } fro
 import { safeText, toCsv } from './csv';
 import { buildXlsx } from './xlsx';
 import Dexie from 'dexie';
+import { sectionFileName } from '../domain/sections';
 
 export async function loadSessions(ids?: readonly string[]): Promise<SessionWithLog[]> {
   const all = await listSessions();
@@ -41,7 +42,7 @@ const sessionsSheetRows = (b: CountBundle): (string | number)[][] => [
   ['Branch', 'Section', 'Stand', 'Employee', 'Started', 'State', 'Pieces', 'Session ID', 'Device ID'],
   ...b.sessions.map(({ session: s, state, pieces }) => [
     safeText(s.branch),
-    safeText(s.section),
+    safeText(sectionFileName(s.section)),
     s.stand,
     safeText(s.employee),
     s.createdAt,

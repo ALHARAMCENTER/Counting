@@ -89,7 +89,7 @@ test('auto backup on close, exports match the on-screen total and check code', a
   for (const b of ['0000000001', '0000000001', '000000000004', '777']) await scan(page, b);
   await page.getByTestId('alert-continue').click();
   const backup = await downloadText(closeSession(page));
-  expect(backup.name).toMatch(/^backup-BR-TEST-SEC-A-7-.*\.csv$/);
+  expect(backup.name).toMatch(/^backup-BR-TEST-men-7-.*\.csv$/);
   expect(backup.text).toContain('#COUNTING-BACKUP-V1');
 
   await page.getByTestId('open-export').click();

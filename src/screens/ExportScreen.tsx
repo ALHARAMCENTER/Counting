@@ -5,6 +5,7 @@ import { bundleFor, exportBackup, exportCount, loadSessions } from '../io/export
 import type { Session } from '../db/types';
 import type { SessionState } from '../domain/sessionState';
 import { Icon } from '../ui/Icon';
+import { sectionLabel } from '../domain/sections';
 
 interface Entry {
   session: Session;
@@ -130,7 +131,7 @@ export function ExportScreen({ onBack }: { onBack: () => void }) {
           {entries.map((e) => (
             <section class="card" key={e.session.id} data-testid={`export-${e.session.section}-${e.session.stand}`}>
               <h2>
-                <bdi>{e.session.section}</bdi> · {t('standLabel')} <bdi dir="ltr">{formatNumber(e.session.stand)}</bdi>
+                <bdi>{sectionLabel(t, e.session.section)}</bdi> · {t('standLabel')} <bdi dir="ltr">{formatNumber(e.session.stand)}</bdi>
               </h2>
               <p class="hint">
                 <bdi>{e.session.employee}</bdi> · <bdi dir="ltr">{e.session.createdAt.slice(0, 16).replace('T', ' ')}</bdi> ·{' '}

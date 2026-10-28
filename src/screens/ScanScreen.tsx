@@ -10,6 +10,7 @@ import { batteryWarning, watchBattery, type BatteryState } from '../lib/battery'
 import { ScannerInput } from '../scan/ScannerInput';
 import { simulateScan } from '../scan/simulate';
 import { exportBackup } from '../io/exporter';
+import { sectionLabel } from '../domain/sections';
 import { Icon } from '../ui/Icon';
 
 interface Props {
@@ -150,7 +151,7 @@ export function ScanScreen({ controller, startInReview, simulator, idleMinutes, 
         )}
         <p class="where">
           <bdi>{s.branch}</bdi>
-          <bdi>{s.section}</bdi>
+          <bdi>{sectionLabel(t, s.section)}</bdi>
           <span>
             {t('standLabel')} <bdi dir="ltr">{formatNumber(s.stand)}</bdi>
           </span>
@@ -194,7 +195,7 @@ export function ScanScreen({ controller, startInReview, simulator, idleMinutes, 
       {input}
       <header class="scan-top">
         <bdi>{s.branch}</bdi>
-        <bdi>{s.section}</bdi>
+        <bdi>{sectionLabel(t, s.section)}</bdi>
         <span>
           {t('standLabel')} <bdi dir="ltr">{formatNumber(s.stand)}</bdi>
         </span>

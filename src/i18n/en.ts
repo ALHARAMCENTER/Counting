@@ -50,7 +50,7 @@ export const en = {
   standLabel: 'Stand',
   employeeLabel: 'Name',
   startScanning: 'Start',
-  setupMissing: 'Ask the supervisor to set the branch and sections.',
+  setupMissing: 'Ask the supervisor to set the branch.',
   scanNow: 'Scan an item',
   sessionTotal: 'Total',
   inThisSession: 'in this count',
@@ -75,9 +75,6 @@ export const en = {
   sessionClosed: 'Count saved.',
   noCatalog: 'No system file loaded. Every barcode is accepted.',
   countSetup: 'Count setup',
-  sections: 'Sections',
-  addSection: 'Add',
-  remove: 'Remove',
   maxStand: 'Number of stands',
   simulator: 'Scanner simulator (testing)',
   loadDemo: 'Load demo items',
@@ -194,6 +191,13 @@ export const en = {
   helpPrivacy3: 'Exported files are saved in Downloads. Delete them from the phone after delivery.',
   helpPrivacy4: 'The PIN only prevents mistakes. It does not protect data from someone holding the device.',
   barcodeLabel: 'Barcode',
+  section_men: 'Men',
+  section_women: 'Women',
+  section_boys: 'Boys',
+  section_girls: 'Girls',
+  section_kids: 'Kids & babies',
+  section_home: 'Home furnishings',
+  section_other: 'Other',
 } as const;
 
 export type MessageKey = keyof typeof en;

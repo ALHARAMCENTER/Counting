@@ -2,6 +2,7 @@ import { useEffect, useState } from 'preact/hooks';
 import { formatNumber, useI18n } from '../i18n';
 import { getCountSetup, type CountSetup } from '../db/settings';
 import { findSessionsForStand } from '../db/log';
+import { SECTION_KEYS, sectionLabel } from '../domain/sections';
 import { Icon } from '../ui/Icon';
 import { PinPad } from '../ui/PinPad';
 
@@ -56,7 +57,7 @@ export function StartSessionScreen({ onCancel, onStart }: Props) {
     </header>
   );
 
-  if (!setup.branch || setup.sections.length === 0) {
+  if (!setup.branch) {
     return (
       <main class="screen">
         {header(t('startCount'))}
@@ -106,7 +107,7 @@ export function StartSessionScreen({ onCancel, onStart }: Props) {
       <main class="screen">
         {header(t('sectionTitle'))}
         <div class="stack">
-          {setup.sections.map((s, i) => (
+          {SECTION_KEYS.map((s, i) => (
             <button
               type="button"
               key={s}
@@ -117,7 +118,7 @@ export function StartSessionScreen({ onCancel, onStart }: Props) {
                 setStep('stand');
               }}
             >
-              {s}
+              {sectionLabel(t, s)}
             </button>
           ))}
         </div>
@@ -165,7 +166,7 @@ export function StartSessionScreen({ onCancel, onStart }: Props) {
           </p>
         </div>
         <p class="where">
-          <bdi>{section}</bdi>
+          <bdi>{sectionLabel(t, section)}</bdi>
           <span>
             {t('standLabel')} <bdi dir="ltr">{formatNumber(stand)}</bdi>
           </span>
@@ -205,7 +206,7 @@ export function StartSessionScreen({ onCancel, onStart }: Props) {
         <dt>{t('branchLabel')}</dt>
         <dd>{setup.branch}</dd>
         <dt>{t('sectionLabel')}</dt>
-        <dd>{section}</dd>
+        <dd>{sectionLabel(t, section)}</dd>
         <dt>{t('standLabel')}</dt>
         <dd>
           <bdi dir="ltr">{formatNumber(stand)}</bdi>

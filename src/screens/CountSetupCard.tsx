@@ -5,11 +5,10 @@ import { Icon } from '../ui/Icon';
 
 const clean = (s: string) => s.trim().replace(/\s+/g, ' ');
 
-/** Supervisor: branch of this device, list of sections, number of stands. */
+/** Supervisor: branch of this device and number of stands. */
 export function CountSetupCard() {
   const { t } = useI18n();
   const [setup, setSetup] = useState<CountSetup | null>(null);
-  const [newSection, setNewSection] = useState('');
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
@@ -20,11 +19,6 @@ export function CountSetupCard() {
   const change = (s: CountSetup) => {
     setSaved(false);
     setSetup(s);
-  };
-  const addSection = () => {
-    const v = clean(newSection);
-    if (v && !setup.sections.includes(v)) change({ ...setup, sections: [...setup.sections, v] });
-    setNewSection('');
   };
 
   return (
@@ -43,42 +37,6 @@ export function CountSetupCard() {
           onInput={(e) => change({ ...setup, branch: e.currentTarget.value })}
         />
       </label>
-
-      <div class="field">
-        <span>{t('sections')}</span>
-        <ul class="list">
-          {setup.sections.map((s) => (
-            <li key={s}>
-              <span>{s}</span>
-              <button
-                type="button"
-                class="btn btn-small"
-                onClick={() => change({ ...setup, sections: setup.sections.filter((x) => x !== s) })}
-              >
-                {t('remove')}
-              </button>
-            </li>
-          ))}
-        </ul>
-        <form
-          class="row-wrap"
-          onSubmit={(e) => {
-            e.preventDefault();
-            addSection();
-          }}
-        >
-          <input
-            class="text-input grow"
-            data-testid="setup-new-section"
-            value={newSection}
-            maxLength={40}
-            onInput={(e) => setNewSection(e.currentTarget.value)}
-          />
-          <button type="submit" class="btn" data-testid="setup-add-section">
-            {t('addSection')}
-          </button>
-        </form>
-      </div>
 
       <label class="field">
         <span>{t('maxStand')}</span>

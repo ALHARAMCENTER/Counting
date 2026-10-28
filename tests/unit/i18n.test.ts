@@ -46,3 +46,14 @@ describe('numbers', () => {
     }
   });
 });
+
+describe('store sections', () => {
+  it('seven fixed sections, translated in every language, Arabic in files', async () => {
+    const { SECTION_KEYS, sectionLabel, sectionFileName } = await import('../../src/domain/sections');
+    expect(SECTION_KEYS).toHaveLength(7);
+    expect(SECTION_KEYS.map((k) => sectionLabel(makeT('ar'), k))).toEqual(['رجالي', 'نسائي', 'ولادي', 'بناتي', 'أطفال ومواليد', 'مفروشات', 'أخرى']);
+    expect(sectionLabel(makeT('en'), 'men')).toBe('Men');
+    expect(sectionFileName('kids')).toBe('أطفال ومواليد');
+    expect(sectionLabel(makeT('en'), 'OLD-VALUE')).toBe('OLD-VALUE');
+  });
+});
