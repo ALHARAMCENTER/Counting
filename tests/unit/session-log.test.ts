@@ -1,0 +1,119 @@
+import { describe, expect, it } from 'vitest';
+import { useFreshDB } from './helpers';
+import { appendScan, appendSessionEvent, findActiveSession, getSessionScans, getSessionState, openSession } from '../../src/db/log';
+import { replaceCatalog } from '../../src/db/catalog';
+import { ScanController } from '../../src/scan/ScanController';
+
+const db = useFreshDB();
+const info = { deviceId: 'dev', branch: 'BR-TEST', section: 'SEC-A', stand: 3, employee: 'Tester' };
+
+describe('session log', () => {
+  it('opens, reviews, resumes and closes through appended events', async () => {
+    const s = await openSession(info);
+    expect(await getSessionState(s.id)).toBe('active');
+    await appendSessionEvent(s.id, 'review');
+    await appendSessionEvent(s.id, 'resume');
+    await appendSessionEvent(s.id, 'review');
+    await appendSessionEvent(s.id, 'close');
+    expect(await getSessionState(s.id)).toBe('closed');
+    expect(await db().sessionEvents.count()).toBe(5);
+  });
+
+  it('refuses an invalid transition without writing anything', async () => {
+    const s = await openSession(info);
+    await expect(appendSessionEvent(s.id, 'close')).rejects.toThrow();
+    expect(await db().sessionEvents.count()).toBe(1);
+  });
+
+  it('refuses scans for a session that is not active', async () => {
+    const s = await openSession(info);
+    await appendSessionEvent(s.id, 'review');
+    await expect(appendScan({ sessionId: s.id, deviceId: 'dev', type: 'scan', barcode: '1', raw: '1' })).rejects.toThrow();
+    expect(await db().events.count()).toBe(0);
+  });
+
+  it('finds the open session after a restart', async () => {
+    const a = await openSession(info);
+    await appendSessionEvent(a.id, 'review');
+    await appendSessionEvent(a.id, 'close');
+    expect(await findActiveSession()).toBeNull();
+    const b = await openSession(info);
+    expect((await findActiveSession())?.session.id).toBe(b.id);
+  });
+});
+
+describe('ScanController pipeline', () => {
+  it('writes every scan, in order, even when lines arrive faster than writes', async () => {
+    await replaceCatalog([
+      { barcode: '0000000001', name: 'DEMO A' },
+      { barcode: '0000000002', name: 'DEMO B' },
+    ]);
+    const s = await openSession(info);
+    const c = await ScanController.load(s, 'dev');
+    const lines = Array.from({ length: 100 }, (_, i) => (i % 3 === 0 ? '0000000002' : '0000000001'));
+    // Fire all without awaiting: simulates a burst from the reader.
+    lines.forEach((l) => void c.handleLine(l));
+    await c.idle();
+
+    const rows = await getSessionScans(s.id);
+    expect(rows.map((r) => r.barcode)).toEqual(lines);
+    expect(c.current.tally.total).toBe(100);
+    expect(c.current.tally.byBarcode.get('0000000002')).toBe(34);
+    // Line 99 is the last one: 99 % 3 === 0 → DEMO B.
+    expect(c.current.last).toMatchObject({ barcode: '0000000002', name: 'DEMO B', countInSession: 34 });
+  });
+
+  it('records unknown barcodes (not ignored) and raises the red alert', async () => {
+    await replaceCatalog([{ barcode: '0000000001', name: 'DEMO A' }]);
+    const s = await openSession(info);
+    const c = await ScanController.load(s, 'dev');
+    await c.handleLine('9999');
+    expect(c.current.alert).toEqual({ kind: 'unknown', barcode: '9999' });
+    expect(c.current.tally.total).toBe(1);
+    expect((await getSessionScans(s.id))[0]!.type).toBe('unknown');
+
+    // Scans during the alert are still saved, and counted on the alert screen.
+    await c.handleLine('0000000001');
+    expect(c.current.savedDuringAlert).toBe(1);
+    expect(c.current.alert).not.toBeNull();
+    c.acknowledgeAlert();
+    expect(c.current.alert).toBeNull();
+    expect(c.current.tally.total).toBe(2);
+  });
+
+  it('wrong keyboard layout is recorded as unknown with a specific alert', async () => {
+    const s = await openSession(info);
+    const c = await ScanController.load(s, 'dev');
+    await c.handleLine('ثثث');
+    expect(c.current.alert?.kind).toBe('wrong-layout');
+    expect((await getSessionScans(s.id))[0]!.type).toBe('unknown');
+  });
+
+  it('without a catalogue every barcode is accepted as a normal scan', async () => {
+    const s = await openSession(info);
+    const c = await ScanController.load(s, 'dev');
+    await c.handleLine('  000777 ');
+    expect(c.current.alert).toBeNull();
+    const [row] = await getSessionScans(s.id);
+    expect(row).toMatchObject({ type: 'scan', barcode: '000777', raw: '  000777 ' });
+  });
+
+  it('a failed write is reported, never shown as counted', async () => {
+    const s = await openSession(info);
+    const c = await ScanController.load(s, 'dev');
+    await appendSessionEvent(s.id, 'review'); // makes the write fail
+    await c.handleLine('0001');
+    expect(c.current.alert).toEqual({ kind: 'save-failed', barcode: '0001' });
+    expect(c.current.tally.total).toBe(0);
+  });
+
+  it('reloading rebuilds the same view from the log', async () => {
+    await replaceCatalog([{ barcode: '0000000001', name: 'DEMO A' }]);
+    const s = await openSession(info);
+    const c = await ScanController.load(s, 'dev');
+    for (let i = 0; i < 5; i++) await c.handleLine('0000000001');
+    const again = await ScanController.load(s, 'dev');
+    expect(again.current.tally.total).toBe(5);
+    expect(again.current.last).toMatchObject({ barcode: '0000000001', name: 'DEMO A', countInSession: 5 });
+  });
+});

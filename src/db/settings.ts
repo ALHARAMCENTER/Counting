@@ -38,3 +38,23 @@ export async function getDeviceId(): Promise<string> {
     return id;
   });
 }
+
+/** Supervisor-defined session choices for this device. */
+export interface CountSetup {
+  branch: string;
+  sections: string[];
+  /** Stands are picked by number from 1..maxStand. */
+  maxStand: number;
+}
+
+export const DEFAULT_SETUP: CountSetup = { branch: '', sections: [], maxStand: 50 };
+
+export async function getCountSetup(): Promise<CountSetup> {
+  return { ...DEFAULT_SETUP, ...(await getSetting<Partial<CountSetup>>('setup')) };
+}
+export const setCountSetup = (s: CountSetup) => setSetting('setup', s);
+
+export async function getSimulator(): Promise<boolean> {
+  return (await getSetting<boolean>('simulator')) === true;
+}
+export const setSimulator = (on: boolean) => setSetting('simulator', on);
