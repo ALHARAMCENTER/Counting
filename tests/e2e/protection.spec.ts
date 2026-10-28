@@ -43,7 +43,15 @@ test.describe('with a configured device', () => {
     await page.getByTestId('tune-save').click();
     await page.getByTestId('back').click();
     await startSession(page);
-    await page.keyboard.type('0000000001\n0000000001\n', { delay: 0 });
+    // Both reads inside one browser task: a true double read, independent of machine speed.
+    await page.evaluate(() => {
+      const send = (k: string) =>
+        document.querySelector('[data-scanner]')!.dispatchEvent(new KeyboardEvent('keydown', { key: k, bubbles: true }));
+      for (let i = 0; i < 2; i++) {
+        for (const c of '0000000001') send(c);
+        send('Enter');
+      }
+    });
     await expect(page.getByTestId('total')).toHaveText('1');
     await page.waitForTimeout(400);
     await scan(page, '0000000001');

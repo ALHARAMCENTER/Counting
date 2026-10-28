@@ -157,3 +157,41 @@ test('a scan immediately after tapping a button keeps every character', async ({
   await scan(page, '0000000002', 0);
   await expect(page.getByTestId('last-count')).toHaveText('×2');
 });
+
+test('scanning while the session is still opening: every character kept', async ({ page }) => {
+  await page.getByTestId('start').click();
+  await page.getByTestId('employee').fill('Tester');
+  await page.getByTestId('employee-next').click();
+  await page.getByTestId('section-0').click();
+  await page.getByTestId('key-7').click();
+  await page.getByTestId('key-ok').click();
+  await page.getByTestId('start-scanning').waitFor();
+  // Tap Start and, in the same instant, the first characters of a scan arrive
+  // (before the scan screen exists). The rest arrives after it appears.
+  await page.evaluate(() => {
+    (document.querySelector('[data-testid="start-scanning"]') as HTMLButtonElement).click();
+    for (const c of '000') document.body.dispatchEvent(new KeyboardEvent('keydown', { key: c, bubbles: true }));
+  });
+  await page.getByTestId('total').waitFor();
+  await page.keyboard.type('000000004'); // '000' + '000000004' = 000000000004
+  await page.keyboard.press('Enter');
+  await expect(page.getByTestId('last-barcode')).toHaveText('000000000004');
+  await expect(page.getByTestId('total')).toHaveText('1');
+  // A whole scan sent while the session opens is kept too.
+  await page.getByTestId('finish').click();
+  await page.getByTestId('confirm-close').click();
+  await page.getByTestId('start').click();
+  await page.getByTestId('employee').fill('Tester');
+  await page.getByTestId('employee-next').click();
+  await page.getByTestId('section-0').click();
+  await page.getByTestId('key-8').click();
+  await page.getByTestId('key-ok').click();
+  await page.getByTestId('start-scanning').waitFor();
+  await page.evaluate(() => {
+    (document.querySelector('[data-testid="start-scanning"]') as HTMLButtonElement).click();
+    for (const c of '0000000002') document.body.dispatchEvent(new KeyboardEvent('keydown', { key: c, bubbles: true }));
+    document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+  });
+  await expect(page.getByTestId('last-name')).toHaveText('DEMO SHIRT B');
+  await expect(page.getByTestId('total')).toHaveText('1');
+});
