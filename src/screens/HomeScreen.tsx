@@ -13,10 +13,11 @@ interface Props {
   onUpdate: () => void;
   onSettings: () => void;
   onStart: () => void;
+  onExport: () => void;
   closedNotice: boolean;
 }
 
-export function HomeScreen({ persist, onRetryPersist, updateReady, onUpdate, onSettings, onStart, closedNotice }: Props) {
+export function HomeScreen({ persist, onRetryPersist, updateReady, onUpdate, onSettings, onStart, onExport, closedNotice }: Props) {
   const { t } = useI18n();
   const [blocked, setBlocked] = useState(false);
   return (
@@ -57,6 +58,9 @@ export function HomeScreen({ persist, onRetryPersist, updateReady, onUpdate, onS
         </button>
       </div>
       <footer class="footer">
+        <button type="button" class="btn btn-secondary" onClick={onExport} data-testid="open-export">
+          <Icon name="download" /> {t('export')}
+        </button>
         <button type="button" class="btn btn-secondary" onClick={onSettings} data-testid="open-settings">
           <Icon name="gear" /> {t('settings')}
         </button>

@@ -9,6 +9,7 @@ import { StaleUndoError, type ScanController, type ScanView, type UndoCandidate 
 import { batteryWarning, watchBattery, type BatteryState } from '../lib/battery';
 import { ScannerInput } from '../scan/ScannerInput';
 import { simulateScan } from '../scan/simulate';
+import { exportBackup } from '../io/exporter';
 import { Icon } from '../ui/Icon';
 
 interface Props {
@@ -110,6 +111,12 @@ export function ScanScreen({ controller, startInReview, simulator, idleMinutes, 
     try {
       await controller.enqueue(() => appendSessionEvent(s.id, 'close'));
       feedbackNotice();
+      // Safety copy of this session's raw log, written as soon as it closes.
+      try {
+        await exportBackup([s.id]);
+      } catch {
+        /* the data is still in the database; export is also available later */
+      }
       onClosed();
     } finally {
       setBusy(false);

@@ -6,17 +6,22 @@ import { Icon } from '../ui/Icon';
 import { CountSetupCard } from './CountSetupCard';
 import { SessionsCard } from './SessionsCard';
 import { TuningCard } from './TuningCard';
+import { ImportCard } from './supervisor/ImportCard';
+import { MergeCard } from './supervisor/MergeCard';
+import { WipeCard } from './supervisor/WipeCard';
 
 interface Props {
   onLang: (l: Lang) => void;
   onBack: () => void;
   onReopened: (sessionId: string) => void;
+  onReconcile: () => void;
+  onWiped: () => void;
 }
 
 const isIOS = () => /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
 /** Supervisor settings (reached only through the PIN gate). */
-export function SettingsScreen({ onLang, onBack, onReopened }: Props) {
+export function SettingsScreen({ onLang, onBack, onReopened, onReconcile, onWiped }: Props) {
   const { t, lang } = useI18n();
   const [sim, setSim] = useState(false);
   const [demoLoaded, setDemoLoaded] = useState(false);
@@ -62,7 +67,15 @@ export function SettingsScreen({ onLang, onBack, onReopened }: Props) {
         </p>
       )}
 
+      <ImportCard />
+
+      <button type="button" class="btn btn-huge btn-primary" onClick={onReconcile} data-testid="open-reconcile">
+        {t('openReconcile')}
+      </button>
+
       <SessionsCard onReopened={onReopened} />
+
+      <MergeCard />
 
       <CountSetupCard />
 
@@ -98,6 +111,8 @@ export function SettingsScreen({ onLang, onBack, onReopened }: Props) {
         </div>
         {demoLoaded && <p class="banner banner-ok">{t('demoLoaded')}</p>}
       </section>
+
+      <WipeCard onWiped={onWiped} />
 
       <section class="card">
         <h2>

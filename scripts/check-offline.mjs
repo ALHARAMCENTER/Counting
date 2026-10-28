@@ -10,6 +10,16 @@ const ALLOWED_HOSTS = new Set([
   'www.w3.org', // SVG/XML namespace identifiers, never fetched
   'bit.ly', // URL inside Dexie / Workbox error message text
   'tinyurl.com', // URL inside Dexie error message text
+  // XML namespace identifiers written inside .xlsx/.ods files by SheetJS.
+  // They are names, never fetched (and the CSP would block a fetch anyway).
+  'schemas.openxmlformats.org',
+  'schemas.microsoft.com',
+  'sheetjs.openxmlformats.org',
+  'purl.org',
+  'purl.oclc.org',
+  'docs.oasis-open.org',
+  'openoffice.org',
+  'sheetjs.com', // string inside SheetJS's Apple Numbers writer template
 ]);
 
 const files = [];

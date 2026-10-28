@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import Dexie from 'dexie';
-import { AppendOnlyError, CountingDB, setDBForTests } from '../../src/db/db';
+import { AppendOnlyError, CountingDB, setDB } from '../../src/db/db';
 import { getDeviceId, getLang, setLang } from '../../src/db/settings';
 import type { ScanEvent } from '../../src/db/types';
 
@@ -9,12 +9,12 @@ let n = 0;
 
 beforeEach(() => {
   db = new CountingDB(`test-${++n}`);
-  setDBForTests(db);
+  setDB(db);
 });
 afterEach(async () => {
   db.close();
   await Dexie.delete(db.name);
-  setDBForTests(null);
+  setDB(null);
 });
 
 const ev = (over: Partial<ScanEvent> = {}): ScanEvent => ({
@@ -83,7 +83,7 @@ describe('append-only scan log', () => {
     db.close();
     await Dexie.delete(db.name);
     db = new CountingDB(db.name);
-    setDBForTests(db);
+    setDB(db);
     expect(await db.events.count()).toBe(0);
   });
 });

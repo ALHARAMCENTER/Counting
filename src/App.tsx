@@ -4,6 +4,8 @@ import { getDeviceId, getLang, getPinRecord, getSimulator, getTuning, setLang, D
 import { claimSingleTab } from './lib/singleTab';
 import { getSession } from './db/log';
 import { Icon } from './ui/Icon';
+import { ExportScreen } from './screens/ExportScreen';
+import { ReconcileScreen } from './screens/supervisor/ReconcileScreen';
 import { findActiveSession, openSession } from './db/log';
 import { ScanController } from './scan/ScanController';
 import { unlockAudio } from './lib/feedback';
@@ -28,7 +30,9 @@ type Route =
   | 'settings'
   | 'start-session'
   | 'scan'
-  | 'other-tab';
+  | 'other-tab'
+  | 'export'
+  | 'reconcile';
 
 interface ActiveScan {
   controller: ScanController;
@@ -153,6 +157,7 @@ export function App() {
           updateReady={updateReady}
           onUpdate={applyPendingUpdate}
           onSettings={() => setRoute('settings-gate')}
+          onExport={() => setRoute('export')}
           onStart={() => {
             setClosedNotice(false);
             setRoute('start-session');
@@ -177,6 +182,8 @@ export function App() {
             setTuningState(await getTuning());
             setRoute('home');
           }}
+          onReconcile={() => setRoute('reconcile')}
+          onWiped={() => location.reload()}
           onReopened={async (id) => {
             setSim(await getSimulator());
             setTuningState(await getTuning());
@@ -184,6 +191,12 @@ export function App() {
           }}
         />
       );
+      break;
+    case 'export':
+      screen = <ExportScreen onBack={() => setRoute('home')} />;
+      break;
+    case 'reconcile':
+      screen = <ReconcileScreen onBack={() => setRoute('settings')} />;
       break;
     case 'start-session':
       screen = <StartSessionScreen onCancel={() => setRoute('home')} onStart={startSession} />;
