@@ -26,3 +26,26 @@ for (const [lang, dir] of [
     expect(text).not.toMatch(/[٠-٩۰-۹]/);
   });
 }
+
+for (const [lang, dir] of [
+  ['ar', 'rtl'],
+  ['en', 'ltr'],
+  ['ur', 'rtl'],
+] as const) {
+  test(`supervisor screens in ${lang}`, async ({ page }) => {
+    await firstRun(page, lang);
+    await configureDevice(page);
+    await page.getByTestId('open-settings').click();
+    for (const d of '2468') await page.getByTestId(`key-${d}`).click();
+    await page.getByTestId('key-ok').click();
+    await page.getByTestId('open-help').click();
+    await expect(page.getByTestId('help')).toBeVisible();
+    await expect(page.locator('html')).toHaveAttribute('dir', dir);
+    await page.screenshot({ path: `test-results/screens/${lang}-6-help.png`, fullPage: true });
+    const text = await page.locator('body').innerText();
+    expect(text).not.toMatch(/[\u0660-\u0669\u06F0-\u06F9]/);
+    await page.getByTestId('back').click();
+    await page.getByTestId('open-reconcile').click();
+    await page.screenshot({ path: `test-results/screens/${lang}-7-reconcile.png`, fullPage: true });
+  });
+}

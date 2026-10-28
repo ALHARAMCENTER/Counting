@@ -205,3 +205,15 @@ test('wipe needs a confirmed full backup; keeps language and PIN', async ({ page
   await openSettings(page); // PIN still works
   await expect(page.getByTestId('set-lang-en')).toBeVisible();
 });
+
+test('differences table fits a phone screen (sign of the difference visible)', async ({ page }) => {
+  await startSession(page);
+  await scan(page, '0000000002');
+  await closeSession(page);
+  await openSettings(page);
+  await page.getByTestId('open-reconcile').click();
+  const wrap = page.locator('.table-wrap');
+  const fits = await wrap.evaluate((el) => el.scrollWidth <= el.clientWidth);
+  expect(fits).toBe(true);
+  await expect(page.getByTestId('diff-table').locator('tbody tr').first()).toContainText('-12');
+});
