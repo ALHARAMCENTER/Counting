@@ -83,9 +83,9 @@ test.describe('with a configured device', () => {
     await expect(dup).toContainText('1 pieces');
 
     await page.getByTestId('dup-continue').click();
-    await expect(page.getByTestId('start-scanning')).toHaveCount(0); // first tap only asks
+    await expect(page.getByTestId('total')).toHaveCount(0); // first tap only asks
     await page.getByTestId('dup-continue').click();
-    await expect(page.getByTestId('start-scanning')).toBeVisible();
+    await expect(page.getByTestId('total')).toHaveText('0'); // new count started
   });
 
   test('closed session reopens only through the supervisor PIN', async ({ page }) => {

@@ -15,15 +15,26 @@ test('start flow shows branch, section, stand on the scan screen', async ({ page
   await expect(page.getByTestId('total')).toHaveText('0');
 });
 
-test('stand number outside the range is refused', async ({ page }) => {
+test('stand number is typed freely; 0 is refused; ✓ starts scanning at once', async ({ page }) => {
   await page.getByTestId('start').click();
   await page.getByTestId('employee').fill('Tester');
   await page.getByTestId('employee-next').click();
   await page.getByTestId('section-0').click();
-  for (const d of '99') await page.getByTestId(`key-${d}`).click();
+  await page.getByTestId('key-0').click();
   await page.getByTestId('key-ok').click();
   await expect(page.getByRole('alert')).toBeVisible();
-  await expect(page.getByTestId('start-scanning')).toHaveCount(0);
+  for (const d of '1234') await page.getByTestId(`key-${d}`).click();
+  await page.getByTestId('key-ok').click();
+  await expect(page.locator('.scan-top')).toContainText('1234');
+  await expect(page.getByTestId('total')).toHaveText('0');
+});
+
+test('the last name is pre-filled next time', async ({ page }) => {
+  await startSession(page, { employee: 'Tester One' });
+  await page.getByTestId('finish').click();
+  await page.getByTestId('confirm-close').click();
+  await page.getByTestId('start').click();
+  await expect(page.getByTestId('employee')).toHaveValue('Tester One');
 });
 
 test('200 fast reader scans: none lost, counts right, leading zeros kept', async ({ page }) => {
@@ -164,12 +175,10 @@ test('scanning while the session is still opening: every character kept', async 
   await page.getByTestId('employee-next').click();
   await page.getByTestId('section-0').click();
   await page.getByTestId('key-7').click();
-  await page.getByTestId('key-ok').click();
-  await page.getByTestId('start-scanning').waitFor();
-  // Tap Start and, in the same instant, the first characters of a scan arrive
+  // Tap ✓ and, in the same instant, the first characters of a scan arrive
   // (before the scan screen exists). The rest arrives after it appears.
   await page.evaluate(() => {
-    (document.querySelector('[data-testid="start-scanning"]') as HTMLButtonElement).click();
+    (document.querySelector('[data-testid="key-ok"]') as HTMLButtonElement).click();
     for (const c of '000') document.body.dispatchEvent(new KeyboardEvent('keydown', { key: c, bubbles: true }));
   });
   await page.getByTestId('total').waitFor();
@@ -185,10 +194,8 @@ test('scanning while the session is still opening: every character kept', async 
   await page.getByTestId('employee-next').click();
   await page.getByTestId('section-0').click();
   await page.getByTestId('key-8').click();
-  await page.getByTestId('key-ok').click();
-  await page.getByTestId('start-scanning').waitFor();
   await page.evaluate(() => {
-    (document.querySelector('[data-testid="start-scanning"]') as HTMLButtonElement).click();
+    (document.querySelector('[data-testid="key-ok"]') as HTMLButtonElement).click();
     for (const c of '0000000002') document.body.dispatchEvent(new KeyboardEvent('keydown', { key: c, bubbles: true }));
     document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
   });

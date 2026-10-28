@@ -38,13 +38,10 @@ export const en = {
   employeeTitle: 'Your name',
   sectionTitle: 'Choose section',
   standTitle: 'Stand number',
-  readyTitle: 'Ready to count',
   branchLabel: 'Branch',
   sectionLabel: 'Section',
   standLabel: 'Stand',
   employeeLabel: 'Name',
-  startScanning: 'Start',
-  setupMissing: 'Ask the supervisor to set the branch.',
   scanNow: 'Scan an item',
   sessionTotal: 'Total',
   inThisSession: 'in this count',
@@ -69,7 +66,6 @@ export const en = {
   sessionClosed: 'Count saved.',
   noCatalog: 'No system file loaded. Every barcode is accepted.',
   countSetup: 'Count setup',
-  maxStand: 'Number of stands',
   simulator: 'Scanner simulator (testing)',
   loadDemo: 'Load demo items',
   demoLoaded: 'Demo items loaded.',
@@ -193,6 +189,7 @@ export const en = {
   section_home: 'Home furnishings',
   section_other: 'Other',
   supervisorSettings: 'Supervisor settings',
+  standInvalid: 'Type a stand number.',
 } as const;
 
 export type MessageKey = keyof typeof en;

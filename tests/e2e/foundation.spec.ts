@@ -75,3 +75,21 @@ test('no request leaves the origin', async ({ page }) => {
   await page.getByTestId('open-settings').click();
   expect(external).toEqual([]);
 });
+
+test('first count on a device asks the branch once', async ({ page }) => {
+  await firstRun(page, 'en');
+  await page.getByTestId('start').click();
+  await page.getByTestId('branch').fill('BR-NEW');
+  await page.getByTestId('branch-next').click();
+  await page.getByTestId('employee').fill('Tester');
+  await page.getByTestId('employee-next').click();
+  await page.getByTestId('section-6').click(); // Other
+  await page.getByTestId('key-3').click();
+  await page.getByTestId('key-ok').click();
+  await expect(page.locator('.scan-top')).toContainText('BR-NEW');
+  await expect(page.locator('.scan-top')).toContainText('Other');
+  await page.getByTestId('finish').click();
+  await page.getByTestId('confirm-close').click();
+  await page.getByTestId('start').click();
+  await expect(page.getByTestId('employee')).toBeVisible(); // branch not asked again
+});

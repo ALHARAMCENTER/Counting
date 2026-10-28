@@ -31,18 +31,14 @@ export async function getDeviceId(): Promise<string> {
   });
 }
 
-/** Session choices for this device. Sections are the fixed list in domain/sections. */
+/** This device's branch. Sections are the fixed list in domain/sections; stands are typed freely. */
 export interface CountSetup {
   branch: string;
-  /** Stands are picked by number from 1..maxStand. */
-  maxStand: number;
 }
-
-export const DEFAULT_SETUP: CountSetup = { branch: '', maxStand: 50 };
 
 export async function getCountSetup(): Promise<CountSetup> {
   const saved = await getSetting<Partial<CountSetup>>('setup');
-  return { branch: saved?.branch ?? DEFAULT_SETUP.branch, maxStand: saved?.maxStand ?? DEFAULT_SETUP.maxStand };
+  return { branch: saved?.branch ?? '' };
 }
 export const setCountSetup = (s: CountSetup) => setSetting('setup', s);
 

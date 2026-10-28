@@ -5,7 +5,7 @@ import { Icon } from '../ui/Icon';
 
 const clean = (s: string) => s.trim().replace(/\s+/g, ' ');
 
-/** Supervisor: branch of this device and number of stands. */
+/** Supervisor: branch of this device. */
 export function CountSetupCard() {
   const { t } = useI18n();
   const [setup, setSetup] = useState<CountSetup | null>(null);
@@ -38,23 +38,6 @@ export function CountSetupCard() {
         />
       </label>
 
-      <label class="field">
-        <span>{t('maxStand')}</span>
-        <input
-          class="text-input"
-          data-testid="setup-max-stand"
-          type="number"
-          inputMode="numeric"
-          min={1}
-          max={999}
-          dir="ltr"
-          value={setup.maxStand}
-          onInput={(e) => {
-            const n = Math.trunc(Number(e.currentTarget.value));
-            if (n >= 1 && n <= 999) change({ ...setup, maxStand: n });
-          }}
-        />
-      </label>
 
       <button
         type="button"
