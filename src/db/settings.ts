@@ -58,3 +58,18 @@ export async function getSimulator(): Promise<boolean> {
   return (await getSetting<boolean>('simulator')) === true;
 }
 export const setSimulator = (on: boolean) => setSetting('simulator', on);
+
+/** Supervisor-tunable safety thresholds. */
+export interface ScanTuning {
+  /** Same barcode again within this many ms is a reader double read (0 = off). */
+  doubleReadMs: number;
+  /** Warn when no scan arrived for this many minutes during a session (0 = off). */
+  idleMinutes: number;
+}
+
+export const DEFAULT_TUNING: ScanTuning = { doubleReadMs: 300, idleMinutes: 5 };
+
+export async function getTuning(): Promise<ScanTuning> {
+  return { ...DEFAULT_TUNING, ...(await getSetting<Partial<ScanTuning>>('tuning')) };
+}
+export const setTuning = (t: ScanTuning) => setSetting('tuning', t);

@@ -2,8 +2,11 @@ import { getDB } from './db';
 import type { ScanEvent, ScanEventType, Session, SessionEvent, SessionEventType } from './types';
 import { InvalidTransitionError, nextState, replayState, type SessionState } from '../domain/sessionState';
 import { newId } from '../lib/id';
+import { computeTally } from '../domain/tally';
 
 const now = () => new Date().toISOString();
+
+export const getSession = (id: string) => getDB().sessions.get(id);
 
 export async function getSessionEvents(sessionId: string): Promise<SessionEvent[]> {
   return getDB().sessionEvents.where('[sessionId+seq]').between([sessionId, -Infinity], [sessionId, Infinity]).toArray();
@@ -29,6 +32,8 @@ export async function openSession(info: Omit<Session, 'id' | 'createdAt'>): Prom
   const db = getDB();
   const session: Session = { ...info, id: newId(), createdAt: now() };
   await db.transaction('rw', db.sessions, db.sessionEvents, async () => {
+    // One open session per device: a second one would split the count.
+    if (await findActiveSession()) throw new AnotherSessionOpenError();
     await db.sessions.add(session);
     await db.sessionEvents.add({ uuid: newId(), sessionId: session.id, type: 'open', ts: session.createdAt });
   });
@@ -75,4 +80,48 @@ export async function appendScan(s: NewScan): Promise<ScanEvent> {
     row.seq = await db.events.add(row);
   });
   return row;
+}
+
+/** Earlier sessions on this device for the same branch + section + stand. */
+export async function findSessionsForStand(
+  branch: string,
+  section: string,
+  stand: number,
+): Promise<{ session: Session; state: SessionState; pieces: number }[]> {
+  const sessions = await getDB().sessions.where('[branch+section+stand]').equals([branch, section, stand]).toArray();
+  return Promise.all(
+    sessions.map(async (session) => ({
+      session,
+      state: await getSessionState(session.id),
+      pieces: computeTally(await getSessionScans(session.id)).total,
+    })),
+  );
+}
+
+/** Supervisor overview: every session with its state and net piece count. */
+export async function sessionOverview(): Promise<{ session: Session; state: SessionState; pieces: number }[]> {
+  const all = await listSessions();
+  return Promise.all(
+    all.map(async (s) => ({ ...s, pieces: computeTally(await getSessionScans(s.session.id)).total })),
+  );
+}
+
+/**
+ * Supervisor reopens a closed session (the caller has checked the PIN).
+ * Refused while another session is open on this device.
+ */
+export async function reopenSession(sessionId: string): Promise<void> {
+  const db = getDB();
+  await db.transaction('rw', db.sessions, db.sessionEvents, async () => {
+    const open = await findActiveSession();
+    if (open && open.session.id !== sessionId) throw new AnotherSessionOpenError();
+    await appendSessionEvent(sessionId, 'reopen');
+  });
+}
+
+export class AnotherSessionOpenError extends Error {
+  constructor() {
+    super('Another session is open on this device');
+    this.name = 'AnotherSessionOpenError';
+  }
 }
