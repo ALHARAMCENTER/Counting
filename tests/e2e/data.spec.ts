@@ -289,3 +289,59 @@ test.describe('times use the device time zone (Riyadh, UTC+3), not UTC', () => {
     expect(riyadhHours()).toContain(exportedAt.slice(0, 13));
   });
 });
+
+test('supervisor deletes one count: copy first, then confirmation, then gone; the others stay', async ({ page }) => {
+  await startSession(page, { section: 0 }); // Men
+  await scan(page, '0000000001');
+  await scan(page, '0000000001');
+  await closeSession(page);
+  await startSession(page, { section: 1 }); // Women
+  await scan(page, '0000000002');
+  await closeSession(page);
+
+  await openSettings(page);
+  const rows = page.getByTestId('session-row');
+  await expect(rows).toHaveCount(2); // newest first: Women, then Men
+  await rows.nth(1).getByTestId('delete-count').click();
+  const dialog = page.getByTestId('delete-dialog');
+  await expect(dialog).toContainText('Men');
+  await expect(dialog).toContainText('2 pieces');
+
+  // Cancel changes nothing.
+  await page.getByTestId('delete-cancel').click();
+  await expect(dialog).toHaveCount(0);
+  await expect(rows).toHaveCount(2);
+
+  // Nothing can be deleted before a copy is saved AND confirmed as received.
+  await rows.nth(1).getByTestId('delete-count').click();
+  await expect(page.getByTestId('delete-forever')).toHaveCount(0);
+  const dl = page.waitForEvent('download');
+  await page.getByTestId('delete-save-copy').click();
+  const copy = await dl;
+  expect(copy.suggestedFilename()).toMatch(/^backup-701-men-\d{8}-\d{4}\.csv$/);
+  await expect(page.getByTestId('delete-forever')).toHaveCount(0);
+  await page.getByTestId('delete-received').click();
+  await page.getByTestId('delete-forever').click(); // the first tap only asks
+  await expect(dialog).toContainText('cannot be undone');
+  await expect(rows).toHaveCount(2);
+  await page.getByTestId('delete-forever').click();
+
+  await expect(page.getByTestId('deleted-notice')).toBeVisible();
+  await expect(rows).toHaveCount(1);
+  await expect(rows.first()).toContainText('Women');
+
+  // The other count is untouched.
+  await page.getByTestId('back').click();
+  await page.getByTestId('open-export').click();
+  await expect(page.getByTestId('session-card')).toHaveCount(1);
+  await expect(page.getByTestId('all-total')).toHaveText('1');
+  await page.getByTestId('back').click();
+
+  // The copy made before deleting brings the deleted count back (merge).
+  await openSettings(page);
+  await page.getByTestId('merge-file').setInputFiles({ name: 'copy.csv', mimeType: 'text/csv', buffer: readFileSync((await copy.path())!) });
+  await expect(page.getByTestId('merge-msg')).toContainText('Added');
+  await page.getByTestId('back').click();
+  await page.getByTestId('open-export').click();
+  await expect(page.getByTestId('all-total')).toHaveText('3');
+});

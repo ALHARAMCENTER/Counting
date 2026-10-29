@@ -189,4 +189,12 @@ export const ar: Messages = {
   branchTitle: 'اختر الفرع',
   noBranches: 'اطلب من المشرف إضافة الفروع.',
   lastBranchHint: 'آخر فرع مستخدم: ملوّن.',
+  deleteTitle: 'حذف هذا الجرد؟',
+  deleteWarn: 'سيُحذف من هذا الجهاز نهائيًا.',
+  deleteStep1: 'احفظ أولًا نسخة من هذا الجرد.',
+  saveCopy: 'احفظ نسخة',
+  copySaved: 'تم حفظ النسخة:',
+  deleteConfirmReceived: 'استلمت النسخة وفتحتها',
+  deleteForever: 'احذف نهائيًا',
+  countDeleted: 'حُذف الجرد.',
 };

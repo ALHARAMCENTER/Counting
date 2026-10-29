@@ -1,9 +1,9 @@
-import { getDB } from './db';
+import { getDB, withSessionDeletion } from './db';
 import type { ScanEvent, ScanEventType, Session, SessionEvent, SessionEventType } from './types';
 import { InvalidTransitionError, nextState, replayState, type SessionState } from '../domain/sessionState';
 import { newId } from '../lib/id';
 import { computeTally } from '../domain/tally';
-import { getDeviceId } from './settings';
+import { getDeviceId, getSetting, setSetting } from './settings';
 
 const now = () => new Date().toISOString();
 
@@ -113,4 +113,61 @@ export class AnotherSessionOpenError extends Error {
     super('Another session is open on this device');
     this.name = 'AnotherSessionOpenError';
   }
+}
+
+/** What was deleted, kept on the device as a trace (the rows themselves are gone). */
+export interface DeletedSessionRecord {
+  id: string;
+  branch: string;
+  section: string;
+  employee: string;
+  createdAt: string;
+  pieces: number;
+  deletedAt: string;
+  /** The copy the supervisor saved and confirmed before deleting. */
+  backupFile: string;
+  backupChecksum: string;
+}
+
+export class SessionNotDeletableError extends Error {
+  constructor() {
+    super('Only a closed count can be deleted');
+    this.name = 'SessionNotDeletableError';
+  }
+}
+
+/**
+ * Deletes one whole count (its scans, its session events, the session) and
+ * leaves a record of it. Only a closed count of this device, or any count that
+ * came from another device by merging, can be deleted. The caller makes sure a
+ * copy was saved and confirmed first.
+ */
+export async function deleteSession(sessionId: string, backup: { fileName: string; checksum: string }): Promise<void> {
+  const db = getDB();
+  const session = await db.sessions.get(sessionId);
+  if (!session) return;
+  const state = await getSessionState(sessionId);
+  if (state !== 'closed' && session.deviceId === (await getDeviceId())) throw new SessionNotDeletableError();
+  const pieces = computeTally(await getSessionScans(sessionId)).total;
+
+  await withSessionDeletion(sessionId, () =>
+    db.transaction('rw', db.events, db.sessionEvents, db.sessions, db.settings, async () => {
+      await db.events.where('sessionId').equals(sessionId).delete();
+      await db.sessionEvents.where('sessionId').equals(sessionId).delete();
+      await db.sessions.delete(sessionId);
+      const record: DeletedSessionRecord = {
+        id: session.id,
+        branch: session.branch,
+        section: session.section,
+        employee: session.employee,
+        createdAt: session.createdAt,
+        pieces,
+        deletedAt: new Date().toISOString(),
+        backupFile: backup.fileName,
+        backupChecksum: backup.checksum,
+      };
+      const log = (await getSetting<DeletedSessionRecord[]>('deletedSessions')) ?? [];
+      await setSetting('deletedSessions', [...log, record]);
+    }),
+  );
 }

@@ -189,4 +189,12 @@ export const ur: Messages = {
   branchTitle: 'برانچ منتخب کریں',
   noBranches: 'سپروائزر سے برانچیں شامل کروائیں۔',
   lastBranchHint: 'آخری استعمال شدہ: نمایاں۔',
+  deleteTitle: 'یہ گنتی حذف کریں؟',
+  deleteWarn: 'یہ اس ڈیوائس سے ہمیشہ کے لیے حذف ہو جائے گی۔',
+  deleteStep1: 'پہلے اس گنتی کی کاپی محفوظ کریں۔',
+  saveCopy: 'کاپی محفوظ کریں',
+  copySaved: 'کاپی محفوظ ہو گئی:',
+  deleteConfirmReceived: 'مجھے کاپی مل گئی اور میں نے کھول لی',
+  deleteForever: 'ہمیشہ کے لیے حذف کریں',
+  countDeleted: 'گنتی حذف ہو گئی۔',
 };

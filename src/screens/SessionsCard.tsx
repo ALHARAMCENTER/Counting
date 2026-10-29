@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'preact/hooks';
 import { useI18n } from '../i18n';
 import { AnotherSessionOpenError, reopenSession, sessionOverview } from '../db/log';
+import { getDeviceId } from '../db/settings';
+import { DeleteCountDialog } from './DeleteCountDialog';
 import type { Session } from '../db/types';
 import type { SessionState } from '../domain/sessionState';
 import { Icon } from '../ui/Icon';
@@ -15,11 +17,17 @@ export function SessionsCard({ onReopened }: { onReopened: (id: string) => void 
   const [rows, setRows] = useState<Row[] | null>(null);
   const [error, setError] = useState<string>();
   const [confirming, setConfirming] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<Row | null>(null);
+  const [deletedNotice, setDeletedNotice] = useState(false);
+  const [deviceId, setDeviceId] = useState('');
 
+  const refresh = () => sessionOverview().then(setRows);
   useEffect(() => {
-    sessionOverview().then(setRows);
+    refresh();
+    getDeviceId().then(setDeviceId);
   }, []);
-  if (!rows || rows.length === 0) return null;
+  if (!rows) return null;
+  if (rows.length === 0 && !deletedNotice) return null;
 
   const stateLabel = (s: SessionState) =>
     s === 'closed' ? t('stateClosed') : s === 'reviewing' ? t('stateReviewing') : t('stateActive');
@@ -42,6 +50,11 @@ export function SessionsCard({ onReopened }: { onReopened: (id: string) => void 
           <Icon name="warning" size={22} /> {error}
         </p>
       )}
+      {deletedNotice && (
+        <p class="banner banner-ok" data-testid="deleted-notice">
+          <Icon name="check" size={22} /> {t('countDeleted')}
+        </p>
+      )}
       <ul class="list">
         {rows.map(({ session: s, state, pieces }) => (
           <li key={s.id} data-testid="session-row">
@@ -53,19 +66,39 @@ export function SessionsCard({ onReopened }: { onReopened: (id: string) => void 
                 {t('piecesN', { n: pieces })} · {stateLabel(state)}
               </span>
             </span>
-            {state === 'closed' &&
-              (confirming === s.id ? (
-                <button type="button" class="btn btn-small btn-danger" onClick={() => reopen(s.id)} data-testid="reopen-confirm">
-                  {t('reopen')}?
+            <span class="row-wrap">
+              {state === 'closed' &&
+                (confirming === s.id ? (
+                  <button type="button" class="btn btn-small btn-danger" onClick={() => reopen(s.id)} data-testid="reopen-confirm">
+                    {t('reopen')}?
+                  </button>
+                ) : (
+                  <button type="button" class="btn btn-small" onClick={() => setConfirming(s.id)} data-testid="reopen">
+                    {t('reopen')}
+                  </button>
+                ))}
+              {/* A count of this device that is still open cannot be deleted. */}
+              {(state === 'closed' || s.deviceId !== deviceId) && (
+                <button type="button" class="btn btn-small" onClick={() => setDeleting({ session: s, state, pieces })} data-testid="delete-count">
+                  {t('remove')}
                 </button>
-              ) : (
-                <button type="button" class="btn btn-small" onClick={() => setConfirming(s.id)} data-testid="reopen">
-                  {t('reopen')}
-                </button>
-              ))}
+              )}
+            </span>
           </li>
         ))}
       </ul>
+      {deleting && (
+        <DeleteCountDialog
+          session={deleting.session}
+          pieces={deleting.pieces}
+          onClose={() => setDeleting(null)}
+          onDeleted={() => {
+            setDeleting(null);
+            setDeletedNotice(true);
+            refresh();
+          }}
+        />
+      )}
     </section>
   );
 }

@@ -1,4 +1,4 @@
-import Dexie, { type EntityTable } from 'dexie';
+import Dexie, { type EntityTable, type Table } from 'dexie';
 import type { CatalogItem, ExportLogRow, ScanEvent, Session, SessionEvent, SettingRow } from './types';
 
 export const DB_NAME = 'counting';
@@ -7,6 +7,22 @@ export class AppendOnlyError extends Error {
   constructor(table: string) {
     super(`Table "${table}" is append-only`);
     this.name = 'AppendOnlyError';
+  }
+}
+
+/**
+ * The ONLY way rows of the append-only tables can be deleted: a supervisor
+ * deleting one whole count, through deleteSession. While it runs, the hooks
+ * accept exactly that session's rows; anything else is still refused.
+ */
+let deletionAllowedFor: string | null = null;
+
+export async function withSessionDeletion<T>(sessionId: string, fn: () => Promise<T>): Promise<T> {
+  deletionAllowedFor = sessionId;
+  try {
+    return await fn();
+  } finally {
+    deletionAllowedFor = null;
   }
 }
 
@@ -36,14 +52,18 @@ export class CountingDB extends Dexie {
     // Enforce append-only logs at the database layer, not just by convention.
     // Wiping the device after a confirmed export deletes the whole database
     // (Dexie.delete), which does not go through these hooks.
-    for (const table of [this.events, this.sessionEvents, this.sessions]) {
+    const guard = (table: Table<any, any>, owner: (row: any) => string | undefined) => {
       table.hook('updating', () => {
         throw new AppendOnlyError(table.name);
       });
-      table.hook('deleting', () => {
+      table.hook('deleting', (_key, row) => {
+        if (deletionAllowedFor !== null && owner(row) === deletionAllowedFor) return;
         throw new AppendOnlyError(table.name);
       });
-    }
+    };
+    guard(this.events, (r) => r.sessionId);
+    guard(this.sessionEvents, (r) => r.sessionId);
+    guard(this.sessions, (r) => r.id);
   }
 }
 

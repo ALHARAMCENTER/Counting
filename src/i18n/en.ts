@@ -189,6 +189,14 @@ export const en = {
   branchTitle: 'Choose branch',
   noBranches: 'Ask the supervisor to add branches.',
   lastBranchHint: 'Last used: highlighted.',
+  deleteTitle: 'Delete this count?',
+  deleteWarn: 'It will be removed from this device for good.',
+  deleteStep1: 'First save a copy of this count.',
+  saveCopy: 'Save a copy',
+  copySaved: 'Copy saved:',
+  deleteConfirmReceived: 'I received and opened the copy',
+  deleteForever: 'Delete for good',
+  countDeleted: 'Count deleted.',
 } as const;
 
 export type MessageKey = keyof typeof en;
