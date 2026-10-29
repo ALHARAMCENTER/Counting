@@ -254,3 +254,38 @@ test('scan list: an undone scan is removed and the undo is not listed; export sc
   expect(csv[1]).toMatch(/^\d{4}-\d\d-\d\d \d\d:\d\d:\d\d,0000000001,BR-TEST,7,Tester$/);
   expect(csv[2]).toMatch(/,0000000002,BR-TEST,7,Tester$/);
 });
+
+test.describe('times use the device time zone (Riyadh, UTC+3), not UTC', () => {
+  test.use({ timezoneId: 'Asia/Riyadh' });
+
+  // "YYYY-MM-DD HH" of now in Riyadh; also 2 minutes ago, in case an hour just changed.
+  const riyadhHours = () =>
+    [0, 2].map((minutesAgo) =>
+      new Date(Date.now() - minutesAgo * 60_000).toLocaleString('sv-SE', { timeZone: 'Asia/Riyadh' }).slice(0, 13),
+    );
+  const sheet = (file: string, name: string) =>
+    XLSX.utils.sheet_to_json<string[]>(XLSX.read(readFileSync(file)).Sheets[name]!, { header: 1, raw: false });
+
+  test('scan list, session cards and the count file all show Riyadh time', async ({ page }) => {
+    await startSession(page, { stand: '3' });
+    await scan(page, '0000000001');
+    const closing = await closeSession(page);
+    const listRows = sheet((await closing.path())!, 'المسحات');
+    expect(riyadhHours()).toContain(String(listRows[1]![0]).slice(0, 13));
+
+    await page.getByTestId('open-export').click();
+    const card = page.getByTestId('export-men-3');
+    const shown = (await card.innerText()).match(/\d{4}-\d\d-\d\d \d\d/)![0];
+    expect(riyadhHours()).toContain(shown);
+
+    const dl = page.waitForEvent('download');
+    await page.getByTestId('all-xlsx').click();
+    const file = (await (await dl).path())!;
+    const started = String(sheet(file, 'Sessions')[1]![4]);
+    expect(started).toMatch(/^\d{4}-\d\d-\d\d \d\d:\d\d:\d\d$/); // not an ISO "T…Z" text
+    expect(riyadhHours()).toContain(started.slice(0, 13));
+    const exportedAt = sheet(file, 'Check').find((r) => r[0] === 'Exported at')![1]!;
+    expect(exportedAt).toMatch(/^\d{4}-\d\d-\d\d \d\d:\d\d:\d\d$/);
+    expect(riyadhHours()).toContain(exportedAt.slice(0, 13));
+  });
+});

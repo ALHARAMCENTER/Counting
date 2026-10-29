@@ -6,6 +6,7 @@ import { SECTION_KEYS, sectionLabel } from '../domain/sections';
 import { unlockAudio } from '../lib/feedback';
 import { keyboardHub } from '../scan/hub';
 import { Icon } from '../ui/Icon';
+import { formatLocalMinute } from '../lib/time';
 import { PinPad } from '../ui/PinPad';
 
 export interface SessionChoice {
@@ -215,7 +216,7 @@ export function StartSessionScreen({ onCancel, onStart }: Props) {
         {earlier.map((e) => (
           <li key={e.session.id}>
             <span>
-              <bdi>{e.session.employee}</bdi> · <bdi dir="ltr">{e.session.createdAt.slice(0, 16).replace('T', ' ')}</bdi>
+              <bdi>{e.session.employee}</bdi> · <bdi dir="ltr">{formatLocalMinute(e.session.createdAt)}</bdi>
             </span>
             <strong>{t('piecesN', { n: e.pieces })}</strong>
           </li>

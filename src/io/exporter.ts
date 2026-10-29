@@ -10,6 +10,7 @@ import { buildXlsx } from './xlsx';
 import Dexie from 'dexie';
 import { sectionFileName } from '../domain/sections';
 import { SCAN_LIST_HEADER, buildScanList } from './scanList';
+import { formatLocalTime } from '../lib/time';
 
 export async function loadSessions(ids?: readonly string[]): Promise<SessionWithLog[]> {
   const all = await listSessions();
@@ -46,7 +47,7 @@ const sessionsSheetRows = (b: CountBundle): (string | number)[][] => [
     safeText(sectionFileName(s.section)),
     s.stand,
     safeText(s.employee),
-    s.createdAt,
+    formatLocalTime(s.createdAt),
     state,
     pieces,
     s.id,
@@ -81,7 +82,7 @@ export async function exportCount(scope: 'session' | 'all', ids: readonly string
           ['Unknown pieces', bundle.unknown.reduce((a, [, q]) => a + q, 0)],
           ['Manual pieces', bundle.manual.reduce((a, [, q]) => a + q, 0)],
           ['Double reads ignored', bundle.ignoredDuplicates],
-          ['Exported at', new Date().toISOString()],
+          ['Exported at', formatLocalTime(new Date().toISOString())],
         ],
         widths: [22, 26],
       },

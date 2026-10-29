@@ -4,6 +4,7 @@ import { AnotherSessionOpenError, reopenSession, sessionOverview } from '../db/l
 import type { Session } from '../db/types';
 import type { SessionState } from '../domain/sessionState';
 import { Icon } from '../ui/Icon';
+import { formatLocalMinute } from '../lib/time';
 import { sectionLabel } from '../domain/sections';
 
 type Row = { session: Session; state: SessionState; pieces: number };
@@ -48,7 +49,7 @@ export function SessionsCard({ onReopened }: { onReopened: (id: string) => void 
               <bdi>{sectionLabel(t, s.section)}</bdi> · {t('standLabel')} <bdi dir="ltr">{formatNumber(s.stand)}</bdi>
               <br />
               <span class="hint">
-                <bdi>{s.employee}</bdi> · <bdi dir="ltr">{s.createdAt.slice(0, 16).replace('T', ' ')}</bdi> ·{' '}
+                <bdi>{s.employee}</bdi> · <bdi dir="ltr">{formatLocalMinute(s.createdAt)}</bdi> ·{' '}
                 {t('piecesN', { n: pieces })} · {stateLabel(state)}
               </span>
             </span>

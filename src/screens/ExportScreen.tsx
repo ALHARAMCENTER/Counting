@@ -5,6 +5,7 @@ import { bundleFor, exportBackup, exportCount, exportScanList, loadSessions } fr
 import type { Session } from '../db/types';
 import type { SessionState } from '../domain/sessionState';
 import { Icon } from '../ui/Icon';
+import { formatLocalMinute } from '../lib/time';
 import { sectionLabel } from '../domain/sections';
 
 interface Entry {
@@ -132,7 +133,7 @@ export function ExportScreen({ onBack }: { onBack: () => void }) {
                 <bdi>{sectionLabel(t, e.session.section)}</bdi> · {t('standLabel')} <bdi dir="ltr">{formatNumber(e.session.stand)}</bdi>
               </h2>
               <p class="hint">
-                <bdi>{e.session.employee}</bdi> · <bdi dir="ltr">{e.session.createdAt.slice(0, 16).replace('T', ' ')}</bdi> ·{' '}
+                <bdi>{e.session.employee}</bdi> · <bdi dir="ltr">{formatLocalMinute(e.session.createdAt)}</bdi> ·{' '}
                 {e.state === 'closed' ? t('stateClosed') : t('stateActive')}
               </p>
               {facts(e.bundle, 'session')}

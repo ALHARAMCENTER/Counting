@@ -1,5 +1,8 @@
 import { COUNTING_TYPES, computeTally } from '../domain/tally';
+import { formatLocalTime } from '../lib/time';
 import type { SessionWithLog } from './countExport';
+
+export { formatLocalTime };
 
 /** The scan list for the office: one row per counted piece, only what is needed. */
 export const SCAN_LIST_HEADER = ['التاريخ والوقت', 'الباركود', 'الفرع', 'الستاند', 'الموظف'] as const;
@@ -11,14 +14,6 @@ export interface ScanListRow {
   branch: string;
   stand: number;
   employee: string;
-}
-
-const pad = (n: number) => String(n).padStart(2, '0');
-
-/** Local time text of an ISO timestamp. `offsetMinutes` is for tests; default = the device's. */
-export function formatLocalTime(iso: string, offsetMinutes = -new Date(iso).getTimezoneOffset()): string {
-  const d = new Date(new Date(iso).getTime() + offsetMinutes * 60_000);
-  return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())}`;
 }
 
 /**
