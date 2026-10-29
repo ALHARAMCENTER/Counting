@@ -83,7 +83,28 @@ test('unknown barcode: red screen, recorded, needs a tap to continue', async ({ 
   await expect(page.getByTestId('total')).toHaveText('2');
 });
 
-test('Arabic keyboard layout gives the specific red screen', async ({ page }) => {
+test('Arabic keyboard layout: the reader\'s keys are read correctly anyway', async ({ page }) => {
+  await startSession(page);
+  // What an iPhone/Android with an ARABIC hardware layout produces for the
+  // keys of the code 0000000003TST00: Arabic characters, but physical key codes.
+  await page.evaluate(() => {
+    const send = (key: string, code: string, shiftKey = false) =>
+      document.body.dispatchEvent(new KeyboardEvent('keydown', { key, code, shiftKey, bubbles: true, cancelable: true }));
+    for (let i = 0; i < 9; i++) send('٠', 'Digit0'); // Arabic-Indic digit zero
+    send('٣', 'Digit3');
+    send('ف', 'KeyT', true);
+    send('س', 'KeyS', true);
+    send('ف', 'KeyT', true);
+    send('٠', 'Digit0');
+    send('٠', 'Digit0');
+    send('Enter', 'Enter');
+  });
+  await expect(page.getByTestId('alert')).toHaveCount(0);
+  await expect(page.getByTestId('last-barcode')).toHaveText('0000000003TST00');
+  await expect(page.getByTestId('last-name')).toHaveText('DEMO DRESS C');
+});
+
+test('Arabic characters without key codes (input method) still give the specific red screen', async ({ page }) => {
   await startSession(page);
   await scan(page, 'ثثث');
   await expect(page.getByTestId('alert')).toContainText('Keyboard language is wrong');

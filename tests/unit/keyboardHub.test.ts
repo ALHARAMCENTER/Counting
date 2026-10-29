@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { KeyboardHub } from '../../src/scan/keyboardHub';
+import { KeyboardHub, charFromKeyEvent } from '../../src/scan/keyboardHub';
 
 function setup() {
   let t = 0;
@@ -80,5 +80,43 @@ describe('KeyboardHub', () => {
     for (const c of '999') hub.push(c);
     hub.enter();
     expect(got).toEqual(['999']);
+  });
+});
+
+describe('charFromKeyEvent (reader input on any keyboard layout)', () => {
+  const k = (key: string, code: string, shiftKey = false, capsLock = false) => charFromKeyEvent({ key, code, shiftKey, capsLock });
+
+  it('English layout: the typed character', () => {
+    expect(k('0', 'Digit0')).toBe('0');
+    expect(k('T', 'KeyT', true)).toBe('T');
+    expect(k('t', 'KeyT')).toBe('t');
+  });
+
+  it('Arabic layout: letters and digits come from the physical key, not the Arabic character', () => {
+    expect(k('ف', 'KeyT')).toBe('t');
+    expect(k('ف', 'KeyT', true)).toBe('T');
+    expect(k('س', 'KeyS', false, true)).toBe('S'); // Caps Lock on
+    expect(k('٣', 'Digit3')).toBe('3');
+    expect(k('لا', 'KeyB')).toBe('b'); // two-character ligature key
+  });
+
+  it('numpad digits and a Num-Lock-off numpad still give digits', () => {
+    expect(k('5', 'Numpad5')).toBe('5');
+    expect(k('End', 'Numpad1')).toBe('1');
+  });
+
+  it('symbols keep the typed character; Shift + digit key stays a symbol', () => {
+    expect(k('-', 'Minus')).toBe('-');
+    expect(k('/', 'Slash')).toBe('/');
+    expect(k('!', 'Digit1', true)).toBe('!');
+  });
+
+  it('non-character keys give null', () => {
+    expect(k('Shift', 'ShiftLeft', true)).toBeNull();
+    expect(k('ArrowUp', 'ArrowUp')).toBeNull();
+  });
+
+  it('events without a code (simulators) fall back to the key', () => {
+    expect(k('7', '')).toBe('7');
   });
 });

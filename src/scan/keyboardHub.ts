@@ -72,6 +72,30 @@ export class KeyboardHub {
 const isTextField = (t: EventTarget | null) =>
   t instanceof HTMLElement && !t.hasAttribute('data-scanner') && (t.isContentEditable || t.matches('input, textarea, select'));
 
+export interface KeyInfo {
+  key: string;
+  code: string;
+  shiftKey: boolean;
+  capsLock?: boolean;
+}
+
+/**
+ * The character a reader meant, independent of the device's keyboard layout.
+ * A reader sends physical key codes; the OS turns them into characters with
+ * the ACTIVE layout, so on an Arabic layout the letters E, M, B arrive as
+ * Arabic letters. The physical key (event.code) does not change with the
+ * layout, so letters and digits are taken from it.
+ * Returns null for keys that are not characters (Shift, arrows, ...).
+ */
+export function charFromKeyEvent(e: KeyInfo): string | null {
+  const letter = /^Key([A-Z])$/.exec(e.code);
+  if (letter) return e.shiftKey !== !!e.capsLock ? letter[1]! : letter[1]!.toLowerCase();
+  // Digits: with Shift the key is a symbol (a real "!" in a code); keep e.key then.
+  const digit = e.shiftKey ? null : /^(?:Digit|Numpad)(\d)$/.exec(e.code);
+  if (digit) return digit[1]!;
+  return e.key.length === 1 ? e.key : null;
+}
+
 /**
  * Listens on the whole document (capture phase), so keys are caught wherever
  * focus happens to be. Real text fields (names, settings) keep normal typing.
@@ -85,11 +109,19 @@ export function installKeyboardHub(hub: KeyboardHub): void {
       if (e.key === 'Enter' || e.keyCode === 13) {
         e.preventDefault();
         hub.enter();
-      } else if (e.key.length === 1) {
-        e.preventDefault();
-        hub.push(e.key);
+        return;
       }
-      // Other keys (Shift, IME "Unidentified"/229 …): text arrives through the
+      const ch = charFromKeyEvent({
+        key: e.key,
+        code: e.code,
+        shiftKey: e.shiftKey,
+        capsLock: e.getModifierState?.('CapsLock'),
+      });
+      if (ch !== null) {
+        e.preventDefault();
+        hub.push(ch);
+      }
+      // Other keys (Shift, IME "Unidentified"/229 ...): text arrives through the
       // scanner field's input event instead.
     },
     true,
