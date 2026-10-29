@@ -34,9 +34,12 @@ export function StartSessionScreen({ onCancel, onStart }: Props) {
 
   useEffect(() => {
     (async () => {
-      setBranchList(await getBranches());
-      setLast((await getLastBranch()) ?? '');
-      setEmployee((await getSetting<string>('lastEmployee')) ?? '');
+      // Load everything first, then show it together: the name field must not
+      // appear and then be overwritten by a slow read after the worker typed.
+      const [list, lastB, lastE] = await Promise.all([getBranches(), getLastBranch(), getSetting<string>('lastEmployee')]);
+      setLast(lastB ?? '');
+      setEmployee((typed) => typed || lastE || ''); // never replace what was already typed
+      setBranchList(list);
     })();
   }, []);
 

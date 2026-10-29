@@ -64,19 +64,18 @@ test('focus comes back after touching the screen', async ({ page }) => {
   await expect(page.getByTestId('scanner-input')).toBeFocused();
 });
 
-test('unknown barcode: red screen, recorded, needs a tap to continue', async ({ page }) => {
+test('a barcode that is not in the system file is accepted like any other', async ({ page }) => {
   await startSession(page);
   await scan(page, '123456789');
-  const alert = page.getByTestId('alert');
-  await expect(alert).toBeVisible();
-  await expect(alert).toContainText('123456789');
+  await expect(page.getByTestId('alert')).toHaveCount(0); // no red screen, nothing to tap
   await expect(page.getByTestId('total')).toHaveText('1');
-  // Keeps scanning while the alert is up: saved, alert stays.
-  await scan(page, '0000000001');
-  await expect(alert).toContainText('1 more pieces were saved');
-  await page.getByTestId('alert-continue').click();
-  await expect(alert).toHaveCount(0);
-  await expect(page.getByTestId('total')).toHaveText('2');
+  await expect(page.getByTestId('last-name')).toHaveText('123456789'); // no name known: the code is the title
+  await expect(page.getByTestId('last-count')).toHaveText('×1');
+  await scan(page, '123456789');
+  await expect(page.getByTestId('last-count')).toHaveText('×2');
+  await scan(page, '0000000001'); // a known one shows its name
+  await expect(page.getByTestId('last-name')).toHaveText('DEMO SHIRT A');
+  await expect(page.getByTestId('total')).toHaveText('3');
 });
 
 test('Arabic keyboard layout: the reader\'s keys are read correctly anyway', async ({ page }) => {
@@ -112,12 +111,11 @@ test('finish: summary, back to scanning, then confirm close', async ({ page }) =
   await scan(page, '0000000001');
   await scan(page, '0000000002');
   await scan(page, '555');
-  await page.getByTestId('alert-continue').click();
 
   await page.getByTestId('finish').click();
   await expect(page.getByTestId('sum-pieces')).toHaveText('4');
   await expect(page.getByTestId('sum-models')).toHaveText('3');
-  await expect(page.getByTestId('sum-unknown')).toHaveText('1');
+  await expect(page.getByTestId('sum-unknown')).toHaveCount(0); // nothing is "unknown" any more
 
   await page.getByTestId('back-to-scan').click();
   await scan(page, '0000000002');

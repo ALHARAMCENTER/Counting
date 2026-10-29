@@ -153,7 +153,7 @@ describe('reconcile', () => {
 });
 
 describe('count bundle', () => {
-  it('aggregates sessions, separates unknown and manual, same checksum for same data', async () => {
+  it('aggregates sessions; a barcode missing from the system file is a normal count; same checksum for same data', async () => {
     await replaceCatalog([{ barcode: '0000000001', name: 'DEMO A' }]);
     await countedSession(['0000000001', '0000000001', 'ZZZ']);
     await countedSession(['0000000001']);
@@ -164,7 +164,7 @@ describe('count bundle', () => {
       ['0000000001', 3],
       ['ZZZ', 1],
     ]);
-    expect(b.unknown).toEqual([['ZZZ', 1]]);
+    expect(b.unknown).toEqual([]); // "unknown" now means only text that is not a barcode (wrong layout)
     expect(b.totalPieces).toBe(4);
     const again = await buildCountBundle([...items].reverse());
     expect(again.checksum).toBe(b.checksum);

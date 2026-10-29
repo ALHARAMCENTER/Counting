@@ -627,3 +627,11 @@ h2 {
   flex-wrap: wrap;
   gap: 4px 12px;
 }
+
+/* A code shown as the title (no name known): monospace, wraps anywhere. */
+.last-name.code {
+  font-family: ui-monospace, 'Roboto Mono', monospace;
+  font-size: clamp(1.4rem, 7vw, 2.4rem);
+  letter-spacing: 0.04em;
+  word-break: break-all;
+}

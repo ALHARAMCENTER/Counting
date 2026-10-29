@@ -23,7 +23,6 @@ export interface UndoCandidate {
 }
 
 export type ScanAlert =
-  | { kind: 'unknown'; barcode: string }
   | { kind: 'wrong-layout'; barcode: string }
   | { kind: 'save-failed'; barcode: string };
 
@@ -207,12 +206,15 @@ export class ScanController {
 
     let type: ScanEventType = 'scan';
     let name: string | undefined;
+    // Every barcode is accepted as a normal scan, whether or not it is in the
+    // system file: the comparison is made later (Differences). The system file
+    // only supplies a name to show. The one thing refused as a good scan is
+    // text that is clearly not a barcode (Arabic letters from a wrong layout).
     if (n.wrongLayout) {
       type = 'unknown';
     } else if (this.hasCatalog) {
       name = this.names.get(n.barcode) ?? (await lookupBarcode(n.barcode))?.name;
-      if (name === undefined) type = 'unknown';
-      else this.names.set(n.barcode, name);
+      if (name !== undefined) this.names.set(n.barcode, name);
     }
 
     let row: ScanEvent;
@@ -239,7 +241,6 @@ export class ScanController {
     const hadAlert = this.view.alert !== null;
     let alert = this.view.alert;
     if (n.wrongLayout) alert = { kind: 'wrong-layout', barcode: n.barcode };
-    else if (type === 'unknown') alert = { kind: 'unknown', barcode: n.barcode };
 
     if (alert && (type === 'unknown' || hadAlert)) feedbackError();
     else feedbackSuccess();

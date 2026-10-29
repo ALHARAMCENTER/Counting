@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { formatNumber, useI18n } from '../i18n';
 import { appendSessionEvent } from '../db/log';
-import { catalogSize, DEMO_CATALOG } from '../db/catalog';
+import { DEMO_CATALOG } from '../db/catalog';
 import { summarize } from '../domain/tally';
 import { feedbackError, feedbackNotice } from '../lib/feedback';
 import { allowScreenOff, keepScreenOn } from '../lib/wakeLock';
@@ -35,7 +35,6 @@ export function ScanScreen({ controller, startInReview, simulator, idleMinutes, 
     reviewingRef.current = v;
     setReviewingState(v);
   };
-  const [hasCatalog, setHasCatalog] = useState(true);
   const [busy, setBusy] = useState(false);
   const [blocked, setBlocked] = useState(false);
   const [confirmUndo, setConfirmUndo] = useState<UndoCandidate | null>(null);
@@ -78,9 +77,6 @@ export function ScanScreen({ controller, startInReview, simulator, idleMinutes, 
   };
 
   useEffect(() => controller.subscribe(setView), [controller]);
-  useEffect(() => {
-    catalogSize().then((n) => setHasCatalog(n > 0));
-  }, []);
   useEffect(() => {
     keepScreenOn();
     return allowScreenOff;
@@ -158,10 +154,14 @@ export function ScanScreen({ controller, startInReview, simulator, idleMinutes, 
           <dd data-testid="sum-pieces">{formatNumber(sum.pieces)}</dd>
           <dt>{t('models')}</dt>
           <dd data-testid="sum-models">{formatNumber(sum.models)}</dd>
-          <dt>{t('unknownCount')}</dt>
-          <dd data-testid="sum-unknown" class={sum.unknownPieces ? 'bad' : ''}>
-            {formatNumber(sum.unknownPieces)}
-          </dd>
+          {sum.unknownPieces > 0 && (
+            <>
+              <dt>{t('unknownCount')}</dt>
+              <dd data-testid="sum-unknown" class="bad">
+                {formatNumber(sum.unknownPieces)}
+              </dd>
+            </>
+          )}
           {sum.manualPieces > 0 && (
             <>
               <dt>{t('manualCount')}</dt>
@@ -195,7 +195,6 @@ export function ScanScreen({ controller, startInReview, simulator, idleMinutes, 
         <bdi>{sectionLabel(t, s.section)}</bdi>
       </header>
 
-      {!hasCatalog && <p class="banner banner-info">{t('noCatalog')}</p>}
       {batteryWarning(battery) !== 'none' && (
         <p
           class={batteryWarning(battery) === 'critical' ? 'banner banner-danger' : 'banner banner-warn'}
@@ -221,12 +220,16 @@ export function ScanScreen({ controller, startInReview, simulator, idleMinutes, 
       <section class="last" data-testid="last">
         {last ? (
           <>
-            <div class={last.type === 'unknown' ? 'last-name bad' : 'last-name'} data-testid="last-name">
-              {last.name ?? (last.type === 'unknown' ? t('unknownItem') : '')}
+            {/* With a name from the system file: the name big, the code small.
+                Without one (not in the file, or no file): the code itself is the title. */}
+            <div class={last.type === 'unknown' ? 'last-name bad' : last.name ? 'last-name' : 'last-name code'} data-testid="last-name">
+              {last.name ?? (last.type === 'unknown' ? t('unknownItem') : <bdi dir="ltr">{last.barcode}</bdi>)}
             </div>
-            <bdi class="last-barcode" dir="ltr" data-testid="last-barcode">
-              {last.barcode}
-            </bdi>
+            {(last.name !== undefined || last.type === 'unknown') && (
+              <bdi class="last-barcode" dir="ltr" data-testid="last-barcode">
+                {last.barcode}
+              </bdi>
+            )}
             {last.undone && (
               <div class="badge-undone" data-testid="undone">
                 <Icon name="undo" size={22} /> {t('undone')}
@@ -277,7 +280,7 @@ export function ScanScreen({ controller, startInReview, simulator, idleMinutes, 
             <h2>
               <Icon name="undo" /> {t('undoConfirmTitle')}
             </h2>
-            <p class="dialog-name">{confirmUndo.name ?? t('unknownItem')}</p>
+            {confirmUndo.name && <p class="dialog-name">{confirmUndo.name}</p>}
             <bdi dir="ltr" class="last-barcode">
               {confirmUndo.barcode}
             </bdi>
@@ -297,21 +300,13 @@ export function ScanScreen({ controller, startInReview, simulator, idleMinutes, 
         <div class="alert-overlay" role="alertdialog" data-testid="alert">
           <Icon name="warning" size={96} />
           <h1>
-            {alert.kind === 'unknown'
-              ? t('unknownTitle')
-              : alert.kind === 'wrong-layout'
-                ? t('wrongLayoutTitle')
-                : t('saveFailedTitle')}
+            {alert.kind === 'wrong-layout' ? t('wrongLayoutTitle') : t('saveFailedTitle')}
           </h1>
           <bdi dir="ltr" class="alert-barcode">
             {alert.barcode}
           </bdi>
           <p>
-            {alert.kind === 'unknown'
-              ? t('unknownBody')
-              : alert.kind === 'wrong-layout'
-                ? t('wrongLayoutBody')
-                : t('saveFailedBody')}
+            {alert.kind === 'wrong-layout' ? t('wrongLayoutBody') : t('saveFailedBody')}
           </p>
           {view.savedDuringAlert > 0 && <p>{t('savedDuringAlert', { n: view.savedDuringAlert })}</p>}
           <button

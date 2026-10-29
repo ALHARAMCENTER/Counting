@@ -65,22 +65,20 @@ describe('ScanController pipeline', () => {
     expect(c.current.last).toMatchObject({ barcode: '0000000002', name: 'DEMO B', countInSession: 34 });
   });
 
-  it('records unknown barcodes (not ignored) and raises the red alert', async () => {
+  it('a barcode that is not in the system file is accepted as a normal scan, with no alert', async () => {
     await replaceCatalog([{ barcode: '0000000001', name: 'DEMO A' }]);
     const s = await openSession(info);
     const c = await ScanController.load(s, 'dev');
     await c.handleLine('9999');
-    expect(c.current.alert).toEqual({ kind: 'unknown', barcode: '9999' });
-    expect(c.current.tally.total).toBe(1);
-    expect((await getSessionScans(s.id))[0]!.type).toBe('unknown');
-
-    // Scans during the alert are still saved, and counted on the alert screen.
-    await c.handleLine('0000000001');
-    expect(c.current.savedDuringAlert).toBe(1);
-    expect(c.current.alert).not.toBeNull();
-    c.acknowledgeAlert();
     expect(c.current.alert).toBeNull();
+    expect(c.current.tally.total).toBe(1);
+    expect(c.current.last).toMatchObject({ barcode: '9999', type: 'scan', name: undefined, countInSession: 1 });
+    expect((await getSessionScans(s.id))[0]).toMatchObject({ type: 'scan', barcode: '9999' });
+
+    await c.handleLine('0000000001'); // a known one still gets its name
+    expect(c.current.last).toMatchObject({ barcode: '0000000001', name: 'DEMO A' });
     expect(c.current.tally.total).toBe(2);
+    expect(c.current.tally.unknownByBarcode.size).toBe(0);
   });
 
   it('wrong keyboard layout is recorded as unknown with a specific alert', async () => {

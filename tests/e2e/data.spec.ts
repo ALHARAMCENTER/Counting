@@ -57,7 +57,9 @@ test('system CSV import: Arabic headers guessed, branch filtered, leading zeros 
   await scan(page, '000000000004');
   await expect(page.getByTestId('last-name')).toHaveText('DEMO ABAYA D');
   await scan(page, '0000000003TST00'); // was in demo catalogue, not in the imported file
-  await expect(page.getByTestId('alert')).toBeVisible();
+  await expect(page.getByTestId('alert')).toHaveCount(0); // still accepted; compared later
+  await expect(page.getByTestId('last-name')).toHaveText('0000000003TST00'); // no name: the code is the title
+  await expect(page.getByTestId('total')).toHaveText('2');
 });
 
 test('a file damaged by Excel (scientific notation) is refused', async ({ page }) => {
@@ -88,7 +90,6 @@ test('system XLSX import with text barcodes', async ({ page }) => {
 test('auto backup on close, exports match the on-screen total and check code', async ({ page }) => {
   await startSession(page);
   for (const b of ['0000000001', '0000000001', '000000000004', '777']) await scan(page, b);
-  await page.getByTestId('alert-continue').click();
   // The file saved automatically at close is the scan list (Excel).
   const closing = await closeSession(page);
   expect(closing.suggestedFilename()).toMatch(/^scans-701-men-\d{8}-\d{4}\.xlsx$/);
@@ -122,7 +123,7 @@ test('auto backup on close, exports match the on-screen total and check code', a
   const count = wb.Sheets['Count']!;
   expect(count['A2']).toMatchObject({ t: 's', v: '000000000004' });
   expect(count['B2']).toMatchObject({ t: 'n', v: 1 });
-  expect(XLSX.utils.sheet_to_json(wb.Sheets['Unknown']!, { header: 1 })).toEqual([['Barcode', 'Qty'], ['777', 1]]);
+  expect(XLSX.utils.sheet_to_json(wb.Sheets['Unknown']!, { header: 1 })).toEqual([['Barcode', 'Qty']]); // 777 is a normal count line
   const check = XLSX.utils.sheet_to_json<[string, string | number]>(wb.Sheets['Check']!, { header: 1 });
   expect(check).toContainEqual(['Checksum', shown]);
   expect(check).toContainEqual(['Total pieces', 4]);
