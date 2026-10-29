@@ -197,4 +197,7 @@ export const ur: Messages = {
   deleteConfirmReceived: 'مجھے کاپی مل گئی اور میں نے کھول لی',
   deleteForever: 'ہمیشہ کے لیے حذف کریں',
   countDeleted: 'گنتی حذف ہو گئی۔',
+  importPreview: 'پہلی قطاریں دیکھیں: بارکوڈ، نام، سسٹم کی مقدار۔',
+  importSameColumn: 'مقدار کا کالم وہی ہے جو بارکوڈ کا ہے۔',
+  importHugeQty: 'مقدار غیر معقول حد تک بڑی ہے (عموماً بارکوڈ کا کالم چن لیا گیا)۔ قطاریں',
 };

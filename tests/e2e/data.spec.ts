@@ -345,3 +345,49 @@ test('supervisor deletes one count: copy first, then confirmation, then gone; th
   await page.getByTestId('open-export').click();
   await expect(page.getByTestId('all-total')).toHaveText('3');
 });
+
+test('ERP stock report (StockCode / CurrBalance / ...) imports with the right columns — FAKE data', async ({ page }) => {
+  // Same shape as the company report: 15-digit codes stored as TEXT, numeric balances.
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet([
+    ['StockCode', 'ModelCode', 'currprice', 'CurrBalance', 'stockgroupname', 'LastTranIN_Date'],
+    ['000000000000101', 'M-101', 6, 3, 'DEMO GROUP A', '19/Nov/2025'],
+    ['000000000000202', 'M-202', 5, 326, 'DEMO GROUP B', '05/Sep/2026'],
+  ]);
+  ws['A2'] = { t: 's', v: '000000000000101', z: '@' };
+  ws['A3'] = { t: 's', v: '000000000000202', z: '@' };
+  XLSX.utils.book_append_sheet(wb, ws, 'Report1');
+
+  await openSettings(page);
+  await importSystemFile(page, 'Report.xlsx', Buffer.from(XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' })));
+  // The guessed columns are the right ones: quantity is CurrBalance, not StockCode.
+  await expect(page.getByTestId('col-barcode')).toHaveValue('0');
+  await expect(page.getByTestId('col-name')).toHaveValue('1');
+  await expect(page.getByTestId('col-qty')).toHaveValue('3');
+  await expect(page.getByTestId('import-items')).toHaveText('2');
+  const preview = page.getByTestId('import-preview');
+  await expect(preview).toContainText('000000000000101');
+  await expect(preview).toContainText('M-101');
+  await expect(preview.locator('li').first().locator('strong')).toHaveText('3');
+  await expect(page.getByTestId('import-huge')).toHaveCount(0);
+
+  // Choosing the barcode column as the quantity is refused.
+  await page.getByTestId('col-qty').selectOption('0');
+  await expect(page.getByTestId('import-same')).toBeVisible();
+  await expect(page.getByTestId('import-confirm')).toHaveCount(0);
+  await page.getByTestId('col-qty').selectOption('3');
+  await page.getByTestId('import-confirm').click();
+  await expect(page.getByTestId('import-done')).toBeVisible();
+
+  // The loaded quantities are used in the differences report.
+  await page.getByTestId('back').click();
+  await startSession(page);
+  for (let i = 0; i < 3; i++) await scan(page, '000000000000101');
+  await closeSession(page);
+  await openSettings(page);
+  await page.getByTestId('open-reconcile').click();
+  const rows = page.getByTestId('diff-table').locator('tbody tr');
+  await expect(rows).toHaveCount(1); // 101 matches (3 = 3); 202 never scanned: -326
+  await expect(rows.first()).toContainText('000000000000202');
+  await expect(rows.first()).toContainText('-326');
+});

@@ -197,6 +197,9 @@ export const en = {
   deleteConfirmReceived: 'I received and opened the copy',
   deleteForever: 'Delete for good',
   countDeleted: 'Count deleted.',
+  importPreview: 'Check the first rows: barcode, name, system quantity.',
+  importSameColumn: 'The quantity column is the same as the barcode column.',
+  importHugeQty: 'Quantity is unreasonably large (usually the barcode column was chosen). Rows',
 } as const;
 
 export type MessageKey = keyof typeof en;

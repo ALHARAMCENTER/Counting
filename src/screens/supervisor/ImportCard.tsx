@@ -128,6 +128,23 @@ export function ImportCard() {
             )}
           </dl>
 
+          {analysis.items.length > 0 && (
+            <div data-testid="import-preview">
+              <p class="hint">{t('importPreview')}</p>
+              <ul class="list preview">
+                {analysis.items.slice(0, 3).map((i) => (
+                  <li key={i.barcode}>
+                    <bdi dir="ltr" class="mono">
+                      {i.barcode}
+                    </bdi>
+                    <span>{i.name}</span>
+                    <strong dir="ltr">{i.systemQty ?? '-'}</strong>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           {analysis.scientific.length > 0 && (
             <p class="banner banner-danger" role="alert" data-testid="import-sci">
               <Icon name="warning" size={22} /> {t('importSci')}: <bdi dir="ltr">{rowsText(analysis.scientific)}</bdi>
@@ -136,6 +153,16 @@ export function ImportCard() {
           {analysis.badQty.length > 0 && (
             <p class="banner banner-danger" role="alert">
               <Icon name="warning" size={22} /> {t('importBadQty')}: <bdi dir="ltr">{rowsText(analysis.badQty)}</bdi>
+            </p>
+          )}
+          {analysis.sameColumn && (
+            <p class="banner banner-danger" role="alert" data-testid="import-same">
+              <Icon name="warning" size={22} /> {t('importSameColumn')}
+            </p>
+          )}
+          {analysis.hugeQty.length > 0 && (
+            <p class="banner banner-danger" role="alert" data-testid="import-huge">
+              <Icon name="warning" size={22} /> {t('importHugeQty')}: <bdi dir="ltr">{rowsText(analysis.hugeQty)}</bdi>
             </p>
           )}
           {analysis.unsafeNumbers.length > 0 && (

@@ -197,4 +197,7 @@ export const ar: Messages = {
   deleteConfirmReceived: 'استلمت النسخة وفتحتها',
   deleteForever: 'احذف نهائيًا',
   countDeleted: 'حُذف الجرد.',
+  importPreview: 'راجع أول الصفوف: الباركود، الاسم، كمية النظام.',
+  importSameColumn: 'عمود الكمية هو نفسه عمود الباركود.',
+  importHugeQty: 'الكمية كبيرة بشكل غير معقول (غالبًا اخترتَ عمود الباركود). الصفوف',
 };

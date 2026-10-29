@@ -37,6 +37,32 @@ describe('system file import analysis', () => {
     expect(guessColumns(['Item', 'Barcode', 'Qty'])).toMatchObject({ barcode: 1, name: 0, qty: 2, branch: -1 });
   });
 
+  it('guesses the columns of the ERP stock report (StockCode, CurrBalance...) correctly', () => {
+    // "StockCode" contains the word "stock": it must be the barcode, not the quantity.
+    const header = ['StockCode', 'ModelCode', 'currprice', 'CurrBalance', 'stockgroupname', 'LastTranIN_Date'];
+    expect(guessColumns(header)).toEqual({ barcode: 0, name: 1, qty: 3, branch: -1, branchValue: '' });
+  });
+
+  it('never uses one column for two roles', () => {
+    const g = guessColumns(['Barcode', 'Barcode2']);
+    expect(new Set([g.barcode, g.qty, g.name, g.branch].filter((i) => i >= 0)).size).toBe([g.barcode, g.qty, g.name, g.branch].filter((i) => i >= 0).length);
+  });
+
+  it('refuses a quantity column that is really the barcode column', () => {
+    const t = table([['StockCode', 'x'], ['000000000000101', '1']]);
+    const same = analyzeImport(t, { barcode: 0, name: -1, branch: -1, qty: 0, branchValue: '' });
+    expect(same.sameColumn).toBe(true);
+    expect(same.canImport).toBe(false);
+  });
+
+  it('refuses unreasonably large quantities (a code picked as the quantity)', () => {
+    const a = analyzeImport(table([['b', 'q'], ['001', '3'], ['002', '99999999999999']]), { barcode: 0, name: -1, branch: -1, qty: 1, branchValue: '' });
+    expect(a.hugeQty).toEqual([3]);
+    expect(a.canImport).toBe(false);
+    const ok = analyzeImport(table([['b', 'q'], ['001', '326'], ['002', '60000']]), { barcode: 0, name: -1, branch: -1, qty: 1, branchValue: '' });
+    expect(ok.canImport).toBe(true);
+  });
+
   it('keeps leading zeros and filters by branch', () => {
     const a = analyzeImport(
       table([
