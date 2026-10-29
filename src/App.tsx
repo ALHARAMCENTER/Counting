@@ -55,6 +55,15 @@ export function App() {
   useEffect(() => applyDocumentLang(lang), [lang]);
   useEffect(() => onUpdateReady(setUpdateReady), []);
 
+  // A ready update is applied by itself while the device is idle on the home
+  // screen: never during a count. A short wait first, so the backup file that
+  // closing a session downloads is not cut off by the reload.
+  useEffect(() => {
+    if (!updateReady || route !== 'home') return;
+    const timer = setTimeout(() => void applyPendingUpdate(), closedNotice ? 6000 : 800);
+    return () => clearTimeout(timer);
+  }, [updateReady, route, closedNotice]);
+
   useEffect(() => {
     // Wake Lock, Web Crypto, service workers and persistent storage all need https.
     if (!window.isSecureContext || !crypto.subtle) {

@@ -151,7 +151,7 @@ export function SettingsScreen({ onLang, onBack, onReopened, onReconcile, onHelp
       </section>
 
       <p class="hint">
-        {t('version')}: <bdi dir="ltr">{__APP_VERSION__}</bdi>
+        {t('version')}: <bdi dir="ltr">{__APP_VERSION__} · {__BUILD_ID__}</bdi>
       </p>
     </main>
   );
