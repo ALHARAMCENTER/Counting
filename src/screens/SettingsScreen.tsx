@@ -3,7 +3,7 @@ import { catalogs, DIR, LANGS, useI18n, type Lang } from '../i18n';
 import { getSimulator, setSimulator } from '../db/settings';
 import { DEMO_CATALOG, replaceCatalog } from '../db/catalog';
 import { Icon } from '../ui/Icon';
-import { CountSetupCard } from './CountSetupCard';
+import { BranchesCard } from './BranchesCard';
 import { SessionsCard } from './SessionsCard';
 import { TuningCard } from './TuningCard';
 import { ImportCard } from './supervisor/ImportCard';
@@ -96,7 +96,7 @@ export function SettingsScreen({ onLang, onBack, onReopened, onReconcile, onHelp
 
           <MergeCard />
 
-          <CountSetupCard />
+          <BranchesCard />
 
           <TuningCard />
 

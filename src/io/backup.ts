@@ -41,7 +41,7 @@ export interface BackupData {
 function rowsOf(d: BackupData): Row[] {
   const rows: Row[] = [];
   for (const s of d.sessions)
-    rows.push(['session', s.id, '', s.id, s.deviceId, '', '', '', s.createdAt, '', s.branch, s.section, String(s.stand), s.employee]);
+    rows.push(['session', s.id, '', s.id, s.deviceId, '', '', '', s.createdAt, '', s.branch, s.section, s.stand === undefined ? '' : String(s.stand), s.employee]);
   for (const e of d.sessionEvents) rows.push(['sessionEvent', e.uuid, String(e.seq ?? ''), e.sessionId, '', e.type, '', '', e.ts, '', '', '', '', '']);
   for (const e of d.events)
     rows.push(['scan', e.uuid, String(e.seq ?? ''), e.sessionId, e.deviceId, e.type, e.barcode, e.raw, e.ts, e.reversesUuid ?? '', '', '', '', '']);
@@ -81,7 +81,9 @@ export async function parseBackup(text: string): Promise<BackupData> {
   for (const r of rows) {
     const [record, uuid, seq, sessionId, deviceId, type, barcode, raw, ts, reversesUuid, branch, section, stand, employee] = r as string[];
     if (record === 'session') {
-      d.sessions.push({ id: uuid!, deviceId: deviceId!, branch: branch!, section: section!, stand: Number(stand), employee: employee!, createdAt: ts! });
+      const sess: Session = { id: uuid!, deviceId: deviceId!, branch: branch!, section: section!, employee: employee!, createdAt: ts! };
+      if (stand) sess.stand = Number(stand);
+      d.sessions.push(sess);
     } else if (record === 'sessionEvent') {
       d.sessionEvents.push({ uuid: uuid!, seq: Number(seq), sessionId: sessionId!, type: type as SessionEvent['type'], ts: ts! });
     } else if (record === 'scan') {

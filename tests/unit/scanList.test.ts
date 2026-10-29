@@ -9,7 +9,6 @@ const session = (over: Partial<Session> = {}): Session => ({
   deviceId: 'd',
   branch: 'BR-TEST',
   section: 'men',
-  stand: 1,
   employee: 'Tester',
   createdAt: '2026-10-29T09:00:00.000Z',
   ...over,
@@ -27,14 +26,14 @@ const ev = (sessionId: string, type: ScanEvent['type'], barcode: string, ts: str
 const item = (s: Session, events: ScanEvent[]): SessionWithLog => ({ session: s, state: 'closed', events });
 
 describe('scan list', () => {
-  it('has exactly the five columns asked for', () => {
-    expect([...SCAN_LIST_HEADER]).toEqual(['التاريخ والوقت', 'الباركود', 'الفرع', 'الستاند', 'الموظف']);
+  it('has exactly the four columns asked for', () => {
+    expect([...SCAN_LIST_HEADER]).toEqual(['التاريخ والوقت', 'الباركود', 'الفرع', 'الموظف']);
   });
 
-  it('one row per piece with time, barcode, branch, stand, employee', () => {
-    const s = session({ stand: 7, employee: 'Ali' });
+  it('one row per piece with time, barcode, branch, employee', () => {
+    const s = session({ employee: 'Ali' });
     const rows = buildScanList([item(s, [ev(s.id, 'scan', '000123', '2026-10-29T09:34:37.246Z')])], 180);
-    expect(rows).toEqual([{ time: '2026-10-29 12:34:37', barcode: '000123', branch: 'BR-TEST', stand: 7, employee: 'Ali' }]);
+    expect(rows).toEqual([{ time: '2026-10-29 12:34:37', barcode: '000123', branch: 'BR-TEST', employee: 'Ali' }]);
   });
 
   it('a scan that was undone is removed, and the undo row is not listed', () => {
@@ -59,15 +58,15 @@ describe('scan list', () => {
   });
 
   it('several sessions are merged oldest first', () => {
-    const s1 = session({ stand: 1 });
-    const s2 = session({ stand: 2 });
+    const s1 = session({ employee: 'One' });
+    const s2 = session({ employee: 'Two' });
     const rows = buildScanList(
       [item(s1, [ev(s1.id, 'scan', 'A', '2026-10-29T09:00:10Z')]), item(s2, [ev(s2.id, 'scan', 'B', '2026-10-29T09:00:05Z')])],
       0,
     );
-    expect(rows.map((r) => [r.barcode, r.stand])).toEqual([
-      ['B', 2],
-      ['A', 1],
+    expect(rows.map((r) => [r.barcode, r.employee])).toEqual([
+      ['B', 'Two'],
+      ['A', 'One'],
     ]);
   });
 

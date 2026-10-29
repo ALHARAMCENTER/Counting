@@ -6,27 +6,23 @@ test.beforeEach(async ({ page }) => {
   await configureDevice(page);
 });
 
-test('start flow shows branch, section, stand on the scan screen', async ({ page }) => {
-  await startSession(page, { section: 1, stand: '12' });
+test('start flow shows branch and section on the scan screen (no stand)', async ({ page }) => {
+  await startSession(page, { section: 1, branch: '706' });
   const top = page.locator('.scan-top');
-  await expect(top).toContainText('BR-TEST');
+  await expect(top).toContainText('706');
   await expect(top).toContainText('Women');
-  await expect(top).toContainText('12');
+  await expect(top).not.toContainText('Stand');
   await expect(page.getByTestId('total')).toHaveText('0');
 });
 
-test('stand number is typed freely; 0 is refused; ✓ starts scanning at once', async ({ page }) => {
+test('the branch used last is highlighted next time', async ({ page }) => {
+  await startSession(page, { branch: '707' });
+  await page.getByTestId('finish').click();
+  await page.getByTestId('confirm-close').click();
   await page.getByTestId('start').click();
-  await page.getByTestId('employee').fill('Tester');
   await page.getByTestId('employee-next').click();
-  await page.getByTestId('section-0').click();
-  await page.getByTestId('key-0').click();
-  await page.getByTestId('key-ok').click();
-  await expect(page.getByRole('alert')).toBeVisible();
-  for (const d of '1234') await page.getByTestId(`key-${d}`).click();
-  await page.getByTestId('key-ok').click();
-  await expect(page.locator('.scan-top')).toContainText('1234');
-  await expect(page.getByTestId('total')).toHaveText('0');
+  await expect(page.getByTestId('branch-707')).toHaveClass(/btn-primary/);
+  await expect(page.getByTestId('branch-701')).not.toHaveClass(/btn-primary/);
 });
 
 test('the last name is pre-filled next time', async ({ page }) => {
@@ -194,12 +190,11 @@ test('scanning while the session is still opening: every character kept', async 
   await page.getByTestId('start').click();
   await page.getByTestId('employee').fill('Tester');
   await page.getByTestId('employee-next').click();
-  await page.getByTestId('section-0').click();
-  await page.getByTestId('key-7').click();
-  // Tap ✓ and, in the same instant, the first characters of a scan arrive
-  // (before the scan screen exists). The rest arrives after it appears.
+  await page.getByTestId('branch-701').click();
+  // Tap the section and, in the same instant, the first characters of a scan
+  // arrive (before the scan screen exists). The rest arrives after it appears.
   await page.evaluate(() => {
-    (document.querySelector('[data-testid="key-ok"]') as HTMLButtonElement).click();
+    (document.querySelector('[data-testid="section-0"]') as HTMLButtonElement).click();
     for (const c of '000') document.body.dispatchEvent(new KeyboardEvent('keydown', { key: c, bubbles: true }));
   });
   await page.getByTestId('total').waitFor();
@@ -213,10 +208,9 @@ test('scanning while the session is still opening: every character kept', async 
   await page.getByTestId('start').click();
   await page.getByTestId('employee').fill('Tester');
   await page.getByTestId('employee-next').click();
-  await page.getByTestId('section-0').click();
-  await page.getByTestId('key-8').click();
+  await page.getByTestId('branch-701').click();
   await page.evaluate(() => {
-    (document.querySelector('[data-testid="key-ok"]') as HTMLButtonElement).click();
+    (document.querySelector('[data-testid="section-0"]') as HTMLButtonElement).click();
     for (const c of '0000000002') document.body.dispatchEvent(new KeyboardEvent('keydown', { key: c, bubbles: true }));
     document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
   });

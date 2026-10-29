@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'preact/hooks';
-import { formatNumber, useI18n } from '../i18n';
+import { useI18n } from '../i18n';
 import { AnotherSessionOpenError, reopenSession, sessionOverview } from '../db/log';
 import type { Session } from '../db/types';
 import type { SessionState } from '../domain/sessionState';
@@ -44,9 +44,9 @@ export function SessionsCard({ onReopened }: { onReopened: (id: string) => void 
       )}
       <ul class="list">
         {rows.map(({ session: s, state, pieces }) => (
-          <li key={s.id} data-testid={`session-row-${s.section}-${s.stand}`}>
+          <li key={s.id} data-testid="session-row">
             <span class="session-info">
-              <bdi>{sectionLabel(t, s.section)}</bdi> · {t('standLabel')} <bdi dir="ltr">{formatNumber(s.stand)}</bdi>
+              <bdi dir="ltr">{s.branch}</bdi> · <bdi>{sectionLabel(t, s.section)}</bdi>
               <br />
               <span class="hint">
                 <bdi>{s.employee}</bdi> · <bdi dir="ltr">{formatLocalMinute(s.createdAt)}</bdi> ·{' '}

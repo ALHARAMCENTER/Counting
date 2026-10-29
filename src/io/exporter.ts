@@ -1,7 +1,6 @@
 import { getDB, CountingDB, setDB } from '../db/db';
 import { getSessionScans, listSessions } from '../db/log';
 import type { ExportLogRow, SettingRow } from '../db/types';
-import { getCountSetup } from '../db/settings';
 import { CSV_TYPE, XLSX_TYPE, downloadFile, fileSafe, stamp } from '../lib/download';
 import { backupToCsv, readBackupData } from './backup';
 import { buildCountBundle, checkRow, type CountBundle, type SessionWithLog } from './countExport';
@@ -34,18 +33,22 @@ async function logExport(row: Omit<ExportLogRow, 'id' | 'ts' | 'dbEvents' | 'dbS
   })) as number;
 }
 
-function baseName(bundle: CountBundle, branch: string, scope: 'session' | 'all'): string {
-  const s = bundle.sessions[0]?.session;
-  const what = scope === 'session' && s ? `${fileSafe(s.section)}-${s.stand}` : 'ALL';
-  return `count-${fileSafe(branch || s?.branch || '', 'branch')}-${what}-${stamp()}`;
+/** ASCII-only name part: the branch when all sessions share one, else ALL; section for one session. */
+function nameParts(sessions: { branch: string; section: string }[], scope: 'session' | 'all'): string {
+  const branches = [...new Set(sessions.map((x) => x.branch))];
+  const branch = branches.length === 1 ? fileSafe(branches[0]!, 'branch') : 'ALL';
+  return scope === 'session' && sessions[0] ? `${branch}-${fileSafe(sessions[0].section)}` : `${branch}-ALL`.replace('ALL-ALL', 'ALL');
+}
+
+function baseName(bundle: CountBundle, scope: 'session' | 'all'): string {
+  return `count-${nameParts(bundle.sessions.map((x) => x.session), scope)}-${stamp()}`;
 }
 
 const sessionsSheetRows = (b: CountBundle): (string | number)[][] => [
-  ['Branch', 'Section', 'Stand', 'Employee', 'Started', 'State', 'Pieces', 'Session ID', 'Device ID'],
+  ['Branch', 'Section', 'Employee', 'Started', 'State', 'Pieces', 'Session ID', 'Device ID'],
   ...b.sessions.map(({ session: s, state, pieces }) => [
     safeText(s.branch),
     safeText(sectionFileName(s.section)),
-    s.stand,
     safeText(s.employee),
     formatLocalTime(s.createdAt),
     state,
@@ -58,8 +61,7 @@ const sessionsSheetRows = (b: CountBundle): (string | number)[][] => [
 /** Count file(s): Barcode + Qty, then the verification row. */
 export async function exportCount(scope: 'session' | 'all', ids: readonly string[] | undefined, format: 'csv' | 'xlsx') {
   const bundle = await bundleFor(ids);
-  const branch = (await getCountSetup()).branch;
-  const name = baseName(bundle, branch, scope);
+  const name = baseName(bundle, scope);
   const check = checkRow(bundle);
 
   if (format === 'csv') {
@@ -72,7 +74,7 @@ export async function exportCount(scope: 'session' | 'all', ids: readonly string
       { name: 'Count', rows: [['Barcode', 'Qty'], ...bundle.count], textColumns: [0], widths: [24, 8] },
       { name: 'Unknown', rows: [['Barcode', 'Qty'], ...bundle.unknown], textColumns: [0], widths: [24, 8] },
       { name: 'Manual', rows: [['Manual entry', 'Qty'], ...bundle.manual.map(([k, q]) => [safeText(k), q])], textColumns: [0], widths: [30, 8] },
-      { name: 'Sessions', rows: sessionsSheetRows(bundle), widths: [14, 14, 6, 16, 22, 10, 8, 38, 38] },
+      { name: 'Sessions', rows: sessionsSheetRows(bundle), widths: [14, 14, 16, 22, 10, 8, 38, 38] },
       {
         name: 'Check',
         rows: [
@@ -101,7 +103,7 @@ export async function exportCount(scope: 'session' | 'all', ids: readonly string
 }
 
 /**
- * The scan list: time, barcode, branch, stand, employee: one row per piece.
+ * The scan list: time, barcode, branch, employee: one row per piece.
  * Undone scans are removed. This is also the file saved automatically when a
  * count is closed.
  */
@@ -109,17 +111,14 @@ export async function exportScanList(scope: 'session' | 'all', ids: readonly str
   const items = await loadSessions(ids);
   const bundle = await buildCountBundle(items);
   const rows = buildScanList(items);
-  const branch = (await getCountSetup()).branch;
-  const first = bundle.sessions[0]?.session;
-  const what = scope === 'session' && first ? `${fileSafe(first.section)}-${first.stand}` : 'ALL';
-  const fileName = `scans-${fileSafe(branch || first?.branch || '', 'branch')}-${what}-${stamp()}.${format}`;
+  const fileName = `scans-${nameParts(bundle.sessions.map((x) => x.session), scope)}-${stamp()}.${format}`;
 
-  const table = rows.map((r) => [r.time, r.barcode, safeText(r.branch), r.stand, safeText(r.employee)]);
+  const table = rows.map((r) => [r.time, r.barcode, safeText(r.branch), safeText(r.employee)]);
   if (format === 'csv') {
     downloadFile(fileName, toCsv([[...SCAN_LIST_HEADER], ...table]), CSV_TYPE);
   } else {
     const data = await buildXlsx([
-      { name: 'المسحات', rows: [[...SCAN_LIST_HEADER], ...table], textColumns: [0, 1], widths: [20, 24, 16, 8, 18] },
+      { name: 'المسحات', rows: [[...SCAN_LIST_HEADER], ...table], textColumns: [0, 1], widths: [20, 24, 16, 18] },
       {
         name: 'Check',
         rows: [
@@ -154,10 +153,7 @@ export async function exportClosedSession(sessionId: string): Promise<void> {
 export async function exportBackup(ids?: readonly string[]): Promise<{ fileName: string; checksum: string; id: number }> {
   const data = await readBackupData(ids);
   const { csv, checksum, scans } = await backupToCsv(data);
-  const branch = (await getCountSetup()).branch;
-  const s = data.sessions[0];
-  const what = ids && ids.length === 1 && s ? `${fileSafe(s.section)}-${s.stand}` : 'ALL';
-  const fileName = `backup-${fileSafe(branch || s?.branch || '', 'branch')}-${what}-${stamp()}.csv`;
+  const fileName = `backup-${nameParts(data.sessions, ids && ids.length === 1 ? 'session' : 'all')}-${stamp()}.csv`;
   downloadFile(fileName, csv, CSV_TYPE);
   const id = await logExport({ scope: ids ? 'backup' : 'backup-all', sessionId: ids?.[0], fileName, totalScans: scans, checksum });
   return { fileName, checksum, id };

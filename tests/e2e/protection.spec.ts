@@ -61,35 +61,8 @@ test.describe('with a configured device', () => {
     await expect(page.getByTestId('summary')).toContainText('Double reads ignored');
   });
 
-  test('same stand again: explicit warning and double confirmation', async ({ page }) => {
-    await startSession(page, { stand: '7' });
-    await scan(page, '0000000001');
-    await page.getByTestId('finish').click();
-    await page.getByTestId('confirm-close').click();
-
-    await startSession(page, { stand: '8' }); // different stand: no warning
-    await page.getByTestId('finish').click();
-    await page.getByTestId('confirm-close').click();
-
-    await page.getByTestId('start').click();
-    await page.getByTestId('employee').fill('Other');
-    await page.getByTestId('employee-next').click();
-    await page.getByTestId('section-0').click();
-    await page.getByTestId('key-7').click();
-    await page.getByTestId('key-ok').click();
-    const dup = page.getByTestId('dup-stand');
-    await expect(dup).toBeVisible();
-    await expect(dup).toContainText('Tester');
-    await expect(dup).toContainText('1 pieces');
-
-    await page.getByTestId('dup-continue').click();
-    await expect(page.getByTestId('total')).toHaveCount(0); // first tap only asks
-    await page.getByTestId('dup-continue').click();
-    await expect(page.getByTestId('total')).toHaveText('0'); // new count started
-  });
-
   test('closed session reopens only through the supervisor PIN', async ({ page }) => {
-    await startSession(page, { stand: '5' });
+    await startSession(page);
     for (let i = 0; i < 3; i++) await scan(page, '0000000002');
     await page.getByTestId('finish').click();
     await page.getByTestId('confirm-close').click();
@@ -98,7 +71,7 @@ test.describe('with a configured device', () => {
 
     await page.getByTestId('unlock-supervisor').click();
     await typePin(page, '2000');
-    const row = page.getByTestId('session-row-men-5');
+    const row = page.getByTestId('session-row');
     await expect(row).toContainText('Closed');
     await row.getByTestId('reopen').click();
     await row.getByTestId('reopen-confirm').click();

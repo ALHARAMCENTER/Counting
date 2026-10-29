@@ -7,7 +7,7 @@ import { ScanController } from '../../src/scan/ScanController';
 
 const db = useFreshDB();
 beforeEach(() => setSetting('deviceId', 'dev'));
-const info = { deviceId: 'dev', branch: 'BR-TEST', section: 'SEC-A', stand: 3, employee: 'Tester' };
+const info = { deviceId: 'dev', branch: 'BR-TEST', section: 'SEC-A', employee: 'Tester' };
 
 describe('session log', () => {
   it('opens, reviews, resumes and closes through appended events', async () => {
@@ -176,26 +176,13 @@ describe('phase C: double reads, undo, reopen', () => {
     await expect(openSession(info)).rejects.toThrow();
     await appendSessionEvent(a.id, 'review');
     await appendSessionEvent(a.id, 'close');
-    const b = await openSession({ ...info, stand: 4 });
+    const b = await openSession(info);
     const { reopenSession } = await import('../../src/db/log');
     await expect(reopenSession(a.id)).rejects.toThrow();
     await appendSessionEvent(b.id, 'review');
     await appendSessionEvent(b.id, 'close');
     await reopenSession(a.id);
     expect(await getSessionState(a.id)).toBe('active');
-  });
-
-  it('finds earlier sessions for the same stand', async () => {
-    const { findSessionsForStand } = await import('../../src/db/log');
-    const a = await openSession(info);
-    const c = await ScanController.load(a, 'dev');
-    await c.handleLine('A');
-    await appendSessionEvent(a.id, 'review');
-    await appendSessionEvent(a.id, 'close');
-    const found = await findSessionsForStand('BR-TEST', 'SEC-A', 3);
-    expect(found).toHaveLength(1);
-    expect(found[0]).toMatchObject({ state: 'closed', pieces: 1 });
-    expect(await findSessionsForStand('BR-TEST', 'SEC-A', 4)).toHaveLength(0);
   });
 });
 

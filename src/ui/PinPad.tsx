@@ -9,7 +9,7 @@ interface Props {
   busy?: boolean;
   onSubmit: (pin: string) => void;
   onCancel?: () => void;
-  /** false: show the digits (e.g. stand number) instead of dots. */
+  /** false: show the digits instead of dots. */
   mask?: boolean;
   maxLength?: number;
 }

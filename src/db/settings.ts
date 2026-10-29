@@ -31,16 +31,22 @@ export async function getDeviceId(): Promise<string> {
   });
 }
 
-/** This device's branch. Sections are the fixed list in domain/sections; stands are typed freely. */
-export interface CountSetup {
-  branch: string;
-}
+/** Branches a worker can pick when starting a count. The supervisor can add and remove. */
+export const DEFAULT_BRANCHES = ['701', '706', '707', '711', '803'];
+export const MAX_BRANCHES = 30;
 
-export async function getCountSetup(): Promise<CountSetup> {
-  const saved = await getSetting<Partial<CountSetup>>('setup');
-  return { branch: saved?.branch ?? '' };
+/** Trimmed, single spaces, at most 20 characters. */
+export const cleanBranchName = (s: string) => s.trim().replace(/\s+/g, ' ').slice(0, 20);
+
+export async function getBranches(): Promise<string[]> {
+  const saved = await getSetting<unknown>('branches');
+  return Array.isArray(saved) ? saved.filter((b): b is string => typeof b === 'string') : [...DEFAULT_BRANCHES];
 }
-export const setCountSetup = (s: CountSetup) => setSetting('setup', s);
+export const setBranches = (list: string[]) => setSetting('branches', list);
+
+/** Branch of the last count started on this device (shown as a hint, and default in reports). */
+export const getLastBranch = () => getSetting<string>('lastBranch');
+export const setLastBranch = (b: string) => setSetting('lastBranch', b);
 
 export async function getSimulator(): Promise<boolean> {
   return (await getSetting<boolean>('simulator')) === true;

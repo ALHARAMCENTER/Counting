@@ -11,7 +11,7 @@ for (const [lang, dir] of [
   test(`worker screens in ${lang}`, async ({ page }) => {
     await firstRun(page, lang);
     await configureDevice(page);
-    await startSession(page, { employee: 'Tester', stand: '7' });
+    await startSession(page, { employee: 'Tester' });
     await scan(page, '0000000003TST00');
     await scan(page, '0000000003TST00');
     await expect(page.locator('html')).toHaveAttribute('dir', dir);

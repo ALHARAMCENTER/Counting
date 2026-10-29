@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'preact/hooks';
 import { formatNumber, useI18n } from '../../i18n';
 import { getDB } from '../../db/db';
 import type { CatalogItem } from '../../db/types';
-import { getCountSetup } from '../../db/settings';
+import { getLastBranch } from '../../db/settings';
 import { reconcile } from '../../domain/reconcile';
 import { loadSessions } from '../../io/exporter';
 import { buildCountBundle, type CountBundle } from '../../io/countExport';
@@ -27,7 +27,7 @@ export function ReconcileScreen({ onBack }: { onBack: () => void }) {
       const sessions = await loadSessions();
       const names = [...new Set(sessions.map((s) => s.session.branch))].sort();
       setBranches(names);
-      const own = (await getCountSetup()).branch;
+      const own = (await getLastBranch()) ?? '';
       setBranch(names.includes(own) ? own : (names[0] ?? ''));
     })();
   }, []);

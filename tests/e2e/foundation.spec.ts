@@ -20,13 +20,13 @@ for (const [lang, dir] of [
     // Settings open without the PIN; supervisor settings need it.
     await page.getByTestId('open-settings').click();
     await expect(page.getByTestId('set-lang-en')).toBeVisible();
-    await expect(page.getByTestId('setup-branch')).toHaveCount(0);
+    await expect(page.getByTestId('branches-card')).toHaveCount(0);
     await page.getByTestId('unlock-supervisor').click();
     await typePin(page, '1111');
     await expect(page.getByRole('alert')).toBeVisible();
-    await expect(page.getByTestId('setup-branch')).toHaveCount(0);
+    await expect(page.getByTestId('branches-card')).toHaveCount(0);
     await typePin(page, '2000');
-    await expect(page.getByTestId('setup-branch')).toBeVisible();
+    await expect(page.getByTestId('branches-card')).toBeVisible();
     await page.screenshot({ path: `${SHOTS}/${lang}-2-settings.png` });
 
     // No Arabic-Indic digits anywhere on screen.
@@ -76,20 +76,59 @@ test('no request leaves the origin', async ({ page }) => {
   expect(external).toEqual([]);
 });
 
-test('first count on a device asks the branch once', async ({ page }) => {
+test('the branch is chosen from the five default branches', async ({ page }) => {
   await firstRun(page, 'en');
   await page.getByTestId('start').click();
-  await page.getByTestId('branch').fill('BR-NEW');
-  await page.getByTestId('branch-next').click();
   await page.getByTestId('employee').fill('Tester');
   await page.getByTestId('employee-next').click();
+  for (const b of ['701', '706', '707', '711', '803']) await expect(page.getByTestId(`branch-${b}`)).toBeVisible();
+  await page.getByTestId('branch-803').click();
   await page.getByTestId('section-6').click(); // Other
-  await page.getByTestId('key-3').click();
-  await page.getByTestId('key-ok').click();
-  await expect(page.locator('.scan-top')).toContainText('BR-NEW');
+  await expect(page.locator('.scan-top')).toContainText('803');
   await expect(page.locator('.scan-top')).toContainText('Other');
+});
+
+test('the supervisor adds and removes branches', async ({ page }) => {
+  await firstRun(page, 'en');
+  await page.getByTestId('open-settings').click();
+  await page.getByTestId('unlock-supervisor').click();
+  await typePin(page, '2000');
+  await page.getByTestId('branch-remove-706').click();
+  await page.getByTestId('branch-new').fill('  999   NEW ');
+  await page.getByTestId('branch-add').click();
+  await page.getByTestId('branch-new').fill('701'); // already there: not added twice
+  await page.getByTestId('branch-add').click();
+  await expect(page.getByTestId('branches-card').locator('li')).toHaveCount(5);
+  await page.getByTestId('back').click();
+
+  await page.reload(); // saved on the device
+  await page.getByTestId('start').click();
+  await page.getByTestId('employee').fill('Tester');
+  await page.getByTestId('employee-next').click();
+  await expect(page.getByTestId('branch-706')).toHaveCount(0);
+  await expect(page.getByTestId('branch-999 NEW')).toBeVisible();
+});
+
+test('with a single branch the branch step is skipped; with none, a message', async ({ page }) => {
+  await firstRun(page, 'en');
+  await page.getByTestId('open-settings').click();
+  await page.getByTestId('unlock-supervisor').click();
+  await typePin(page, '2000');
+  for (const b of ['706', '707', '711', '803']) await page.getByTestId(`branch-remove-${b}`).click();
+  await page.getByTestId('back').click();
+  await page.getByTestId('start').click();
+  await page.getByTestId('employee').fill('Tester');
+  await page.getByTestId('employee-next').click();
+  await page.getByTestId('section-0').click(); // straight to the sections
+  await expect(page.locator('.scan-top')).toContainText('701');
   await page.getByTestId('finish').click();
   await page.getByTestId('confirm-close').click();
+
+  await page.getByTestId('open-settings').click();
+  await page.getByTestId('unlock-supervisor').click();
+  await typePin(page, '2000');
+  await page.getByTestId('branch-remove-701').click();
+  await page.getByTestId('back').click();
   await page.getByTestId('start').click();
-  await expect(page.getByTestId('employee')).toBeVisible(); // branch not asked again
+  await expect(page.getByTestId('no-branches')).toBeVisible();
 });

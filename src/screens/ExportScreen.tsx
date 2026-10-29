@@ -128,16 +128,16 @@ export function ExportScreen({ onBack }: { onBack: () => void }) {
           </section>
 
           {entries.map((e) => (
-            <section class="card" key={e.session.id} data-testid={`export-${e.session.section}-${e.session.stand}`}>
+            <section class="card" key={e.session.id} data-testid="session-card">
               <h2>
-                <bdi>{sectionLabel(t, e.session.section)}</bdi> · {t('standLabel')} <bdi dir="ltr">{formatNumber(e.session.stand)}</bdi>
+                <bdi dir="ltr">{e.session.branch}</bdi> · <bdi>{sectionLabel(t, e.session.section)}</bdi>
               </h2>
               <p class="hint">
                 <bdi>{e.session.employee}</bdi> · <bdi dir="ltr">{formatLocalMinute(e.session.createdAt)}</bdi> ·{' '}
                 {e.state === 'closed' ? t('stateClosed') : t('stateActive')}
               </p>
               {facts(e.bundle, 'session')}
-              {buttons('session', [e.session.id], `s-${e.session.stand}`)}
+              {buttons('session', [e.session.id], `s-${e.session.id}`)}
             </section>
           ))}
         </>

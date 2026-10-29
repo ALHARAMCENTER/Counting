@@ -87,22 +87,6 @@ export async function appendScan(s: NewScan): Promise<ScanEvent> {
   return row;
 }
 
-/** Earlier sessions on this device for the same branch + section + stand. */
-export async function findSessionsForStand(
-  branch: string,
-  section: string,
-  stand: number,
-): Promise<{ session: Session; state: SessionState; pieces: number }[]> {
-  const sessions = await getDB().sessions.where('[branch+section+stand]').equals([branch, section, stand]).toArray();
-  return Promise.all(
-    sessions.map(async (session) => ({
-      session,
-      state: await getSessionState(session.id),
-      pieces: computeTally(await getSessionScans(session.id)).total,
-    })),
-  );
-}
-
 /** Supervisor overview: every session with its state and net piece count. */
 export async function sessionOverview(): Promise<{ session: Session; state: SessionState; pieces: number }[]> {
   const all = await listSessions();

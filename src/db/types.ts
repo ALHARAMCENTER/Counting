@@ -59,7 +59,8 @@ export interface Session {
   deviceId: string;
   branch: string;
   section: string;
-  stand: number;
+  /** Removed from the app; only sessions made before that carry it. */
+  stand?: number;
   employee: string;
   createdAt: string;
 }

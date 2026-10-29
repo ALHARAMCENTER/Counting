@@ -16,10 +16,10 @@ import { getDB } from '../../src/db/db';
 const db = useFreshDB();
 beforeEach(() => setSetting('deviceId', 'dev'));
 
-const info = { deviceId: 'dev', branch: 'BR-TEST', section: 'SEC-A', stand: 1, employee: 'Tester' };
+const info = { deviceId: 'dev', branch: 'BR-TEST', section: 'SEC-A', employee: 'Tester' };
 
-async function countedSession(lines: string[], close = true, stand = 1) {
-  const s = await openSession({ ...info, stand });
+async function countedSession(lines: string[], close = true) {
+  const s = await openSession(info);
   const c = await ScanController.load(s, 'dev');
   for (const l of lines) await c.handleLine(l);
   if (close) {
@@ -129,8 +129,8 @@ describe('reconcile', () => {
 describe('count bundle', () => {
   it('aggregates sessions, separates unknown and manual, same checksum for same data', async () => {
     await replaceCatalog([{ barcode: '0000000001', name: 'DEMO A' }]);
-    await countedSession(['0000000001', '0000000001', 'ZZZ'], true, 1);
-    await countedSession(['0000000001'], true, 2);
+    await countedSession(['0000000001', '0000000001', 'ZZZ']);
+    await countedSession(['0000000001']);
     const all = await sessionOverview();
     const items = await Promise.all(all.map(async (x) => ({ ...x, events: await getSessionScans(x.session.id) })));
     const b = await buildCountBundle(items);
@@ -205,7 +205,7 @@ describe('backup and merge', () => {
   it('a merged open session from another device is never resumed here', async () => {
     const { findActiveSession } = await import('../../src/db/log');
     await mergeBackup({
-      sessions: [{ id: 'x', deviceId: 'OTHER', branch: 'B', section: 'S', stand: 1, employee: 'E', createdAt: '2026-01-01T00:00:00Z' }],
+      sessions: [{ id: 'x', deviceId: 'OTHER', branch: 'B', section: 'S', employee: 'E', createdAt: '2026-01-01T00:00:00Z' }],
       sessionEvents: [{ uuid: 'e1', seq: 1, sessionId: 'x', type: 'open', ts: '' }],
       events: [],
     });
@@ -253,5 +253,16 @@ describe('csv count file', () => {
       ['000123', '2'],
       ['#TOTAL', '2', '#CHECKSUM', b.checksum],
     ]);
+  });
+});
+
+describe('sessions without a stand (stand was removed)', () => {
+  it('backup round-trip keeps sessions without a stand, and still reads older files that have one', async () => {
+    const withStand = { id: 'old', deviceId: 'd', branch: '701', section: 'men', stand: 4, employee: 'E', createdAt: '2026-01-01T00:00:00.000Z' };
+    const without = { id: 'new', deviceId: 'd', branch: '701', section: 'men', employee: 'E', createdAt: '2026-01-02T00:00:00.000Z' };
+    const { csv } = await backupToCsv({ sessions: [withStand, without], sessionEvents: [], events: [] });
+    const back = await parseBackup(csv);
+    expect(back.sessions[0]).toMatchObject({ id: 'old', stand: 4 });
+    expect(back.sessions[1]!.stand).toBeUndefined();
   });
 });

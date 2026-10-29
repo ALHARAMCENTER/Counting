@@ -152,9 +152,6 @@ export function ScanScreen({ controller, startInReview, simulator, idleMinutes, 
         <p class="where">
           <bdi>{s.branch}</bdi>
           <bdi>{sectionLabel(t, s.section)}</bdi>
-          <span>
-            {t('standLabel')} <bdi dir="ltr">{formatNumber(s.stand)}</bdi>
-          </span>
         </p>
         <dl class="summary">
           <dt>{t('pieces')}</dt>
@@ -196,9 +193,6 @@ export function ScanScreen({ controller, startInReview, simulator, idleMinutes, 
       <header class="scan-top">
         <bdi>{s.branch}</bdi>
         <bdi>{sectionLabel(t, s.section)}</bdi>
-        <span>
-          {t('standLabel')} <bdi dir="ltr">{formatNumber(s.stand)}</bdi>
-        </span>
       </header>
 
       {!hasCatalog && <p class="banner banner-info">{t('noCatalog')}</p>}

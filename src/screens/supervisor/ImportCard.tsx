@@ -3,7 +3,7 @@ import { formatNumber, useI18n } from '../../i18n';
 import { analyzeImport, branchValues, guessColumns, type ColumnMap, type Table } from '../../io/catalogImport';
 import { readTableFile } from '../../io/readTable';
 import { catalogSize, replaceCatalog } from '../../db/catalog';
-import { getCountSetup } from '../../db/settings';
+import { getLastBranch } from '../../db/settings';
 import { Icon } from '../../ui/Icon';
 
 const rowsText = (r: number[]) => r.slice(0, 10).join(', ') + (r.length > 10 ? ' …' : '');
@@ -25,7 +25,7 @@ export function ImportCard() {
     if (!f) return;
     const tbl = await readTableFile(f);
     const guess = guessColumns(tbl.rows[0] ?? []);
-    const branch = (await getCountSetup()).branch;
+    const branch = (await getLastBranch()) ?? '';
     const values = branchValues(tbl, guess.branch);
     guess.branchValue = values.includes(branch) ? branch : (values[0] ?? '');
     setTable(tbl);

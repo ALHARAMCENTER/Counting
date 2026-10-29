@@ -6,10 +6,10 @@ import { configureDevice, firstRun, scan, startSession, typePin } from './helper
 // FAKE data only.
 const SYSTEM_CSV = [
   'الباركود,اسم الموديل,الفرع,الكمية',
-  '0000000001,DEMO SHIRT A,BR-TEST,3',
-  '0000000002,DEMO SHIRT B,BR-TEST,2',
-  '000000000004,DEMO ABAYA D,BR-TEST,1',
-  '0000000001,DEMO SHIRT A,BR-OTHER,99',
+  '0000000001,DEMO SHIRT A,701,3',
+  '0000000002,DEMO SHIRT B,701,2',
+  '000000000004,DEMO ABAYA D,701,1',
+  '0000000001,DEMO SHIRT A,706,99',
 ].join('\r\n');
 
 async function openSettings(page: Page) {
@@ -91,15 +91,15 @@ test('auto backup on close, exports match the on-screen total and check code', a
   await page.getByTestId('alert-continue').click();
   // The file saved automatically at close is the scan list (Excel).
   const closing = await closeSession(page);
-  expect(closing.suggestedFilename()).toMatch(/^scans-BR-TEST-.*-7-\d{8}-\d{4}\.xlsx$/);
+  expect(closing.suggestedFilename()).toMatch(/^scans-701-men-\d{8}-\d{4}\.xlsx$/);
   const closed = XLSX.read(readFileSync((await closing.path())!));
   const closedRows = XLSX.utils.sheet_to_json<string[]>(closed.Sheets['المسحات']!, { header: 1, raw: false });
-  expect(closedRows[0]).toEqual(['التاريخ والوقت', 'الباركود', 'الفرع', 'الستاند', 'الموظف']);
+  expect(closedRows[0]).toEqual(['التاريخ والوقت', 'الباركود', 'الفرع', 'الموظف']);
   expect(closedRows.slice(1).map((r) => r.slice(1))).toEqual([
-    ['0000000001', 'BR-TEST', '7', 'Tester'],
-    ['0000000001', 'BR-TEST', '7', 'Tester'],
-    ['000000000004', 'BR-TEST', '7', 'Tester'],
-    ['777', 'BR-TEST', '7', 'Tester'],
+    ['0000000001', '701', 'Tester'],
+    ['0000000001', '701', 'Tester'],
+    ['000000000004', '701', 'Tester'],
+    ['777', '701', 'Tester'],
   ]);
   expect(closedRows[1]![0]).toMatch(/^\d{4}-\d\d-\d\d \d\d:\d\d:\d\d$/);
   expect(closed.Sheets['المسحات']!['B4']).toMatchObject({ t: 's', v: '000000000004' }); // text, zeros kept
@@ -249,10 +249,10 @@ test('scan list: an undone scan is removed and the undo is not listed; export sc
   const dl = page.waitForEvent('download');
   await page.getByTestId('all-list-csv').click();
   const csv = readFileSync((await (await dl).path())!, 'utf8').replace(/^\uFEFF/, '').trim().split('\r\n');
-  expect(csv[0]).toBe('التاريخ والوقت,الباركود,الفرع,الستاند,الموظف');
+  expect(csv[0]).toBe('التاريخ والوقت,الباركود,الفرع,الموظف');
   expect(csv).toHaveLength(3);
-  expect(csv[1]).toMatch(/^\d{4}-\d\d-\d\d \d\d:\d\d:\d\d,0000000001,BR-TEST,7,Tester$/);
-  expect(csv[2]).toMatch(/,0000000002,BR-TEST,7,Tester$/);
+  expect(csv[1]).toMatch(/^\d{4}-\d\d-\d\d \d\d:\d\d:\d\d,0000000001,701,Tester$/);
+  expect(csv[2]).toMatch(/,0000000002,701,Tester$/);
 });
 
 test.describe('times use the device time zone (Riyadh, UTC+3), not UTC', () => {
@@ -267,21 +267,21 @@ test.describe('times use the device time zone (Riyadh, UTC+3), not UTC', () => {
     XLSX.utils.sheet_to_json<string[]>(XLSX.read(readFileSync(file)).Sheets[name]!, { header: 1, raw: false });
 
   test('scan list, session cards and the count file all show Riyadh time', async ({ page }) => {
-    await startSession(page, { stand: '3' });
+    await startSession(page);
     await scan(page, '0000000001');
     const closing = await closeSession(page);
     const listRows = sheet((await closing.path())!, 'المسحات');
     expect(riyadhHours()).toContain(String(listRows[1]![0]).slice(0, 13));
 
     await page.getByTestId('open-export').click();
-    const card = page.getByTestId('export-men-3');
+    const card = page.getByTestId('session-card');
     const shown = (await card.innerText()).match(/\d{4}-\d\d-\d\d \d\d/)![0];
     expect(riyadhHours()).toContain(shown);
 
     const dl = page.waitForEvent('download');
     await page.getByTestId('all-xlsx').click();
     const file = (await (await dl).path())!;
-    const started = String(sheet(file, 'Sessions')[1]![4]);
+    const started = String(sheet(file, 'Sessions')[1]![3]);
     expect(started).toMatch(/^\d{4}-\d\d-\d\d \d\d:\d\d:\d\d$/); // not an ISO "T…Z" text
     expect(riyadhHours()).toContain(started.slice(0, 13));
     const exportedAt = sheet(file, 'Check').find((r) => r[0] === 'Exported at')![1]!;

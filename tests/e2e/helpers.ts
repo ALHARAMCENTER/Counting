@@ -13,7 +13,7 @@ export async function firstRun(page: Page, lang: 'ar' | 'en' | 'ur') {
 }
 
 /**
- * Supervisor config: fake branch, demo catalogue.
+ * Supervisor config: demo catalogue and double-read setting.
  * The double-read guard is off by default because tests type the same code
  * back to back at machine speed; tests of the guard turn it on.
  */
@@ -21,8 +21,6 @@ export async function configureDevice(page: Page, { pin = '2000', doubleReadMs =
   await page.getByTestId('open-settings').click();
   await page.getByTestId('unlock-supervisor').click();
   await typePin(page, pin);
-  await page.getByTestId('setup-branch').fill('BR-TEST');
-  await page.getByTestId('setup-save').click();
   await page.getByTestId('sim-toggle').click();
   await page.getByTestId('load-demo').click();
   await page.getByTestId('tune-double').fill(String(doubleReadMs));
@@ -30,13 +28,12 @@ export async function configureDevice(page: Page, { pin = '2000', doubleReadMs =
   await page.getByTestId('back').click();
 }
 
-export async function startSession(page: Page, { employee = 'Tester', section = 0, stand = '7' } = {}) {
+export async function startSession(page: Page, { employee = 'Tester', section = 0, branch = '701' } = {}) {
   await page.getByTestId('start').click();
   await page.getByTestId('employee').fill(employee);
   await page.getByTestId('employee-next').click();
-  await page.getByTestId(`section-${section}`).click();
-  for (const d of stand) await page.getByTestId(`key-${d}`).click();
-  await page.getByTestId('key-ok').click(); // ✓ starts scanning
+  await page.getByTestId(`branch-${branch}`).click();
+  await page.getByTestId(`section-${section}`).click(); // tapping the section starts scanning
   await page.getByTestId('total').waitFor();
 }
 

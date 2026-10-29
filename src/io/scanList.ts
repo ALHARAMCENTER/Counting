@@ -5,14 +5,13 @@ import type { SessionWithLog } from './countExport';
 export { formatLocalTime };
 
 /** The scan list for the office: one row per counted piece, only what is needed. */
-export const SCAN_LIST_HEADER = ['التاريخ والوقت', 'الباركود', 'الفرع', 'الستاند', 'الموظف'] as const;
+export const SCAN_LIST_HEADER = ['التاريخ والوقت', 'الباركود', 'الفرع', 'الموظف'] as const;
 
 export interface ScanListRow {
   /** Local time of the device, "YYYY-MM-DD HH:MM:SS". */
   time: string;
   barcode: string;
   branch: string;
-  stand: number;
   employee: string;
 }
 
@@ -35,7 +34,6 @@ export function buildScanList(items: readonly SessionWithLog[], offsetMinutes?: 
           time: formatLocalTime(e.ts, offsetMinutes),
           barcode: e.barcode,
           branch: session.branch,
-          stand: session.stand,
           employee: session.employee,
         },
       });
