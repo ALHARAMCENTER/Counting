@@ -14,9 +14,17 @@ export function downloadFile(name: string, data: BlobPart, type: string): void {
 export const CSV_TYPE = 'text/csv;charset=utf-8';
 export const XLSX_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 
-/** File-name safe text (keeps Arabic/Urdu letters, drops separators). */
-export function fileSafe(s: string): string {
-  return s.replace(/[\\/:*?"<>|\s]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40) || 'x';
+/**
+ * File-name safe text. Only ASCII letters, digits and - . _ are kept: Arabic
+ * and Urdu names are replaced or dropped by some phones and browsers when a
+ * file is saved, so the details live inside the file, not in its name.
+ */
+export function fileSafe(s: string, fallback = 'x'): string {
+  const ascii = s
+    .replace(/[^A-Za-z0-9._-]+/g, '_')
+    .replace(/^[_.-]+|[_.-]+$/g, '')
+    .slice(0, 40);
+  return /[A-Za-z0-9]/.test(ascii) ? ascii : fallback;
 }
 
 export function stamp(d = new Date()): string {

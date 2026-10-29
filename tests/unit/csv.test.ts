@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { decodeBytes, detectDelimiter, parseCsv, safeText, toCsv } from '../../src/io/csv';
 import { countChecksum } from '../../src/io/checksum';
+import { fileSafe } from '../../src/lib/download';
 
 describe('parseCsv', () => {
   it('keeps every cell as text, leading zeros included', () => {
@@ -84,5 +85,15 @@ describe('countChecksum', () => {
     expect(a).not.toBe(c);
     expect(a).not.toBe(d);
     expect(a).toMatch(/^[0-9A-F]{12}$/);
+  });
+});
+
+describe('fileSafe (file names are ASCII only)', () => {
+  it('keeps ASCII, drops Arabic and Urdu, never returns an empty name', () => {
+    expect(fileSafe('BR-TEST 1')).toBe('BR-TEST_1');
+    expect(fileSafe('الدائري')).toBe('x');
+    expect(fileSafe('الدائري', 'branch')).toBe('branch');
+    expect(fileSafe('الدائري 2')).toBe('2');
+    expect(fileSafe('a/b\\c:d')).toBe('a_b_c_d');
   });
 });

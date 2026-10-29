@@ -89,9 +89,20 @@ test('auto backup on close, exports match the on-screen total and check code', a
   await startSession(page);
   for (const b of ['0000000001', '0000000001', '000000000004', '777']) await scan(page, b);
   await page.getByTestId('alert-continue').click();
-  const backup = await downloadText(closeSession(page));
-  expect(backup.name).toMatch(/^backup-BR-TEST-men-7-.*\.csv$/);
-  expect(backup.text).toContain('#COUNTING-BACKUP-V1');
+  // The file saved automatically at close is the scan list (Excel).
+  const closing = await closeSession(page);
+  expect(closing.suggestedFilename()).toMatch(/^scans-BR-TEST-.*-7-\d{8}-\d{4}\.xlsx$/);
+  const closed = XLSX.read(readFileSync((await closing.path())!));
+  const closedRows = XLSX.utils.sheet_to_json<string[]>(closed.Sheets['المسحات']!, { header: 1, raw: false });
+  expect(closedRows[0]).toEqual(['التاريخ والوقت', 'الباركود', 'الفرع', 'الستاند', 'الموظف']);
+  expect(closedRows.slice(1).map((r) => r.slice(1))).toEqual([
+    ['0000000001', 'BR-TEST', '7', 'Tester'],
+    ['0000000001', 'BR-TEST', '7', 'Tester'],
+    ['000000000004', 'BR-TEST', '7', 'Tester'],
+    ['777', 'BR-TEST', '7', 'Tester'],
+  ]);
+  expect(closedRows[1]![0]).toMatch(/^\d{4}-\d\d-\d\d \d\d:\d\d:\d\d$/);
+  expect(closed.Sheets['المسحات']!['B4']).toMatchObject({ t: 's', v: '000000000004' }); // text, zeros kept
 
   await page.getByTestId('open-export').click();
   await expect(page.getByTestId('all-total')).toHaveText('4');
@@ -217,4 +228,29 @@ test('differences table fits a phone screen (sign of the difference visible)', a
   const fits = await wrap.evaluate((el) => el.scrollWidth <= el.clientWidth);
   expect(fits).toBe(true);
   await expect(page.getByTestId('diff-table').locator('tbody tr').first()).toContainText('-12');
+});
+
+test('scan list: an undone scan is removed and the undo is not listed; export screen files match', async ({ page }) => {
+  await startSession(page);
+  await scan(page, '0000000001');
+  await scan(page, '0000000002');
+  await scan(page, '000000000004');
+  await page.getByTestId('undo').click();
+  await page.getByTestId('undo-yes').click();
+  await expect(page.getByTestId('total')).toHaveText('2');
+  const closing = await closeSession(page);
+  const rows = XLSX.utils.sheet_to_json<string[]>(
+    XLSX.read(readFileSync((await closing.path())!)).Sheets['المسحات']!,
+    { header: 1, raw: false },
+  );
+  expect(rows.slice(1).map((r) => r[1])).toEqual(['0000000001', '0000000002']);
+
+  await page.getByTestId('open-export').click();
+  const dl = page.waitForEvent('download');
+  await page.getByTestId('all-list-csv').click();
+  const csv = readFileSync((await (await dl).path())!, 'utf8').replace(/^\uFEFF/, '').trim().split('\r\n');
+  expect(csv[0]).toBe('التاريخ والوقت,الباركود,الفرع,الستاند,الموظف');
+  expect(csv).toHaveLength(3);
+  expect(csv[1]).toMatch(/^\d{4}-\d\d-\d\d \d\d:\d\d:\d\d,0000000001,BR-TEST,7,Tester$/);
+  expect(csv[2]).toMatch(/,0000000002,BR-TEST,7,Tester$/);
 });

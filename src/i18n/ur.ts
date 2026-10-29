@@ -190,4 +190,6 @@ export const ur: Messages = {
   section_other: 'دیگر',
   supervisorSettings: 'سپروائزر کی ترتیبات',
   standInvalid: 'اسٹینڈ نمبر لکھیں۔',
+  scanListLabel: 'اسکین کی فہرست (ہر چیز ایک قطار)',
+  quantitiesLabel: 'ہر بارکوڈ کی مقدار',
 };

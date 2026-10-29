@@ -9,6 +9,7 @@ import { safeText, toCsv } from './csv';
 import { buildXlsx } from './xlsx';
 import Dexie from 'dexie';
 import { sectionFileName } from '../domain/sections';
+import { SCAN_LIST_HEADER, buildScanList } from './scanList';
 
 export async function loadSessions(ids?: readonly string[]): Promise<SessionWithLog[]> {
   const all = await listSessions();
@@ -35,7 +36,7 @@ async function logExport(row: Omit<ExportLogRow, 'id' | 'ts' | 'dbEvents' | 'dbS
 function baseName(bundle: CountBundle, branch: string, scope: 'session' | 'all'): string {
   const s = bundle.sessions[0]?.session;
   const what = scope === 'session' && s ? `${fileSafe(s.section)}-${s.stand}` : 'ALL';
-  return `count-${fileSafe(branch || s?.branch || 'branch')}-${what}-${stamp()}`;
+  return `count-${fileSafe(branch || s?.branch || '', 'branch')}-${what}-${stamp()}`;
 }
 
 const sessionsSheetRows = (b: CountBundle): (string | number)[][] => [
@@ -98,6 +99,56 @@ export async function exportCount(scope: 'session' | 'all', ids: readonly string
   return { bundle, fileName };
 }
 
+/**
+ * The scan list: time, barcode, branch, stand, employee: one row per piece.
+ * Undone scans are removed. This is also the file saved automatically when a
+ * count is closed.
+ */
+export async function exportScanList(scope: 'session' | 'all', ids: readonly string[] | undefined, format: 'csv' | 'xlsx') {
+  const items = await loadSessions(ids);
+  const bundle = await buildCountBundle(items);
+  const rows = buildScanList(items);
+  const branch = (await getCountSetup()).branch;
+  const first = bundle.sessions[0]?.session;
+  const what = scope === 'session' && first ? `${fileSafe(first.section)}-${first.stand}` : 'ALL';
+  const fileName = `scans-${fileSafe(branch || first?.branch || '', 'branch')}-${what}-${stamp()}.${format}`;
+
+  const table = rows.map((r) => [r.time, r.barcode, safeText(r.branch), r.stand, safeText(r.employee)]);
+  if (format === 'csv') {
+    downloadFile(fileName, toCsv([[...SCAN_LIST_HEADER], ...table]), CSV_TYPE);
+  } else {
+    const data = await buildXlsx([
+      { name: 'المسحات', rows: [[...SCAN_LIST_HEADER], ...table], textColumns: [0, 1], widths: [20, 24, 16, 8, 18] },
+      {
+        name: 'Check',
+        rows: [
+          ['Total pieces', rows.length],
+          ['Checksum', bundle.checksum],
+        ],
+        widths: [16, 20],
+      },
+    ]);
+    downloadFile(fileName, data, XLSX_TYPE);
+  }
+  await logExport({
+    scope,
+    sessionId: scope === 'session' ? ids?.[0] : undefined,
+    fileName,
+    totalScans: rows.length,
+    checksum: bundle.checksum,
+  });
+  return { rows: rows.length, fileName };
+}
+
+/** The file saved when a count is closed: Excel, or CSV if Excel cannot be built. */
+export async function exportClosedSession(sessionId: string): Promise<void> {
+  try {
+    await exportScanList('session', [sessionId], 'xlsx');
+  } catch {
+    await exportScanList('session', [sessionId], 'csv');
+  }
+}
+
 /** Raw-log backup of some or all sessions (the file used for merging and before wiping). */
 export async function exportBackup(ids?: readonly string[]): Promise<{ fileName: string; checksum: string; id: number }> {
   const data = await readBackupData(ids);
@@ -105,7 +156,7 @@ export async function exportBackup(ids?: readonly string[]): Promise<{ fileName:
   const branch = (await getCountSetup()).branch;
   const s = data.sessions[0];
   const what = ids && ids.length === 1 && s ? `${fileSafe(s.section)}-${s.stand}` : 'ALL';
-  const fileName = `backup-${fileSafe(branch || s?.branch || 'branch')}-${what}-${stamp()}.csv`;
+  const fileName = `backup-${fileSafe(branch || s?.branch || '', 'branch')}-${what}-${stamp()}.csv`;
   downloadFile(fileName, csv, CSV_TYPE);
   const id = await logExport({ scope: ids ? 'backup' : 'backup-all', sessionId: ids?.[0], fileName, totalScans: scans, checksum });
   return { fileName, checksum, id };

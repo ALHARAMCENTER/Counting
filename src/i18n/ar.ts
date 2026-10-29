@@ -190,4 +190,6 @@ export const ar: Messages = {
   section_other: 'أخرى',
   supervisorSettings: 'إعدادات المشرف',
   standInvalid: 'اكتب رقم الستاند.',
+  scanListLabel: 'قائمة المسحات (صف لكل قطعة)',
+  quantitiesLabel: 'الكميات لكل باركود',
 };

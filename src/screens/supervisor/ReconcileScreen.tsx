@@ -49,7 +49,7 @@ export function ReconcileScreen({ onBack }: { onBack: () => void }) {
     ['Barcode', 'Name', 'System', 'Counted', 'Diff', 'In system'],
     ...(result?.rows ?? []).map((r) => [r.barcode, safeText(r.name), r.system, r.counted, r.diff, r.inSystem ? 'yes' : 'NO']),
   ];
-  const fileBase = () => `diff-${fileSafe(branch)}-${stamp()}`;
+  const fileBase = () => `diff-${fileSafe(branch, 'branch')}-${stamp()}`;
   const manualPieces = bundle?.manual.reduce((a, [, q]) => a + q, 0) ?? 0;
 
   return (

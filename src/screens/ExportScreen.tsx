@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'preact/hooks';
 import { formatNumber, useI18n } from '../i18n';
 import type { CountBundle } from '../io/countExport';
-import { bundleFor, exportBackup, exportCount, loadSessions } from '../io/exporter';
+import { bundleFor, exportBackup, exportCount, exportScanList, loadSessions } from '../io/exporter';
 import type { Session } from '../db/types';
 import type { SessionState } from '../domain/sessionState';
 import { Icon } from '../ui/Icon';
@@ -45,27 +45,25 @@ export function ExportScreen({ onBack }: { onBack: () => void }) {
     }
   };
 
-  const buttons = (scope: 'session' | 'all', ids: string[] | undefined, testId: string) => (
+  const pair = (testId: string, make: (format: 'csv' | 'xlsx') => Promise<string>) => (
     <div class="row-wrap">
-      <button
-        type="button"
-        class="btn"
-        disabled={busy}
-        data-testid={`${testId}-csv`}
-        onClick={() => run(async () => (await exportCount(scope, ids, 'csv')).fileName)}
-      >
+      <button type="button" class="btn" disabled={busy} data-testid={`${testId}-csv`} onClick={() => run(() => make('csv'))}>
         {t('csv')}
       </button>
-      <button
-        type="button"
-        class="btn btn-primary"
-        disabled={busy}
-        data-testid={`${testId}-xlsx`}
-        onClick={() => run(async () => (await exportCount(scope, ids, 'xlsx')).fileName)}
-      >
+      <button type="button" class="btn btn-primary" disabled={busy} data-testid={`${testId}-xlsx`} onClick={() => run(() => make('xlsx'))}>
         {t('excel')}
       </button>
     </div>
+  );
+
+  /** Scan list (one row per piece) first, then the quantities per barcode. */
+  const buttons = (scope: 'session' | 'all', ids: string[] | undefined, testId: string) => (
+    <>
+      <p class="hint">{t('scanListLabel')}</p>
+      {pair(`${testId}-list`, async (f) => (await exportScanList(scope, ids, f)).fileName)}
+      <p class="hint">{t('quantitiesLabel')}</p>
+      {pair(testId, async (f) => (await exportCount(scope, ids, f)).fileName)}
+    </>
   );
 
   const facts = (b: CountBundle, testId: string) => (

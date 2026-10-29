@@ -190,6 +190,8 @@ export const en = {
   section_other: 'Other',
   supervisorSettings: 'Supervisor settings',
   standInvalid: 'Type a stand number.',
+  scanListLabel: 'Scan list (one row per piece)',
+  quantitiesLabel: 'Quantities per barcode',
 } as const;
 
 export type MessageKey = keyof typeof en;
