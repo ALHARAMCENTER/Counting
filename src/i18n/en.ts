@@ -197,6 +197,12 @@ export const en = {
   importPreview: 'Check the first rows: barcode, name, system quantity.',
   importSameColumn: 'The quantity column is the same as the barcode column.',
   importHugeQty: 'Quantity is unreasonably large (usually the barcode column was chosen). Rows',
+  camera: 'Camera',
+  cameraClose: 'Close camera',
+  cameraStarting: 'Starting camera…',
+  cameraDenied: 'Camera blocked. Allow the camera for this app in the phone settings.',
+  cameraUnavailable: 'Camera not available.',
+  cameraHint: 'Point at the barcode. Move the next piece in to count it.',
 } as const;
 
 export type MessageKey = keyof typeof en;

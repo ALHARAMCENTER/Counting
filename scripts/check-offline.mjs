@@ -20,6 +20,9 @@ const ALLOWED_HOSTS = new Set([
   'docs.oasis-open.org',
   'openoffice.org',
   'sheetjs.com', // string inside SheetJS's Apple Numbers writer template
+  // Default .wasm address inside zxing-wasm. src/scan/decoder.ts replaces it
+  // with the local file, and the page's security policy would block it anyway.
+  'fastly.jsdelivr.net',
 ]);
 
 const files = [];

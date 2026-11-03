@@ -21,7 +21,9 @@ function buildId(): string {
 // Privacy guard: the built app may not talk to any other origin.
 const CSP = [
   "default-src 'self'",
-  "script-src 'self'",
+  // 'wasm-unsafe-eval' only allows compiling WebAssembly (the barcode decoder);
+  // it does not allow eval() of text, and scripts still come from this app only.
+  "script-src 'self' 'wasm-unsafe-eval'",
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob:",
   "connect-src 'self'",
@@ -75,7 +77,7 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
+        globPatterns: ['**/*.{js,css,html,svg,png,woff2,wasm}'],
         navigateFallback: 'index.html',
         cleanupOutdatedCaches: true,
       },

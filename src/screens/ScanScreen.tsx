@@ -8,6 +8,7 @@ import { allowScreenOff, keepScreenOn } from '../lib/wakeLock';
 import { StaleUndoError, type ScanController, type ScanView, type UndoCandidate } from '../scan/ScanController';
 import { batteryWarning, watchBattery, type BatteryState } from '../lib/battery';
 import { ScannerInput } from '../scan/ScannerInput';
+import { CameraScanner } from '../scan/CameraScanner';
 import { simulateScan } from '../scan/simulate';
 import { exportClosedSession } from '../io/exporter';
 import { sectionLabel } from '../domain/sections';
@@ -41,6 +42,7 @@ export function ScanScreen({ controller, startInReview, simulator, idleMinutes, 
   const [undoStale, setUndoStale] = useState(false);
   const [battery, setBattery] = useState<BatteryState | null>(null);
   const [idle, setIdle] = useState(false);
+  const [cameraOn, setCameraOn] = useState(false);
   const s = controller.session;
 
   useEffect(() => watchBattery(setBattery), []);
@@ -85,6 +87,7 @@ export function ScanScreen({ controller, startInReview, simulator, idleMinutes, 
   // Session steps go through the scan queue: every scan that arrived before
   // the tap is saved first, every scan after it lands in the right state.
   const startReview = async () => {
+    setCameraOn(false); // the camera never stays on behind the summary
     setBusy(true);
     try {
       await controller.enqueue(() => appendSessionEvent(s.id, 'review'));
@@ -129,6 +132,10 @@ export function ScanScreen({ controller, startInReview, simulator, idleMinutes, 
     } else void controller.handleLine(line);
   };
   const input = <ScannerInput active onLine={onLine} />;
+  // A piece read by the camera goes through the same pipeline as the reader's.
+  const onCameraCode = (code: string) => {
+    if (!reviewingRef.current) void controller.handleLine(code);
+  };
 
   const { last, tally, alert } = view;
 
@@ -188,7 +195,7 @@ export function ScanScreen({ controller, startInReview, simulator, idleMinutes, 
   }
 
   return (
-    <main class="screen scan-screen">
+    <main class={cameraOn ? 'screen scan-screen with-camera' : 'screen scan-screen'}>
       {input}
       <header class="scan-top">
         <bdi>{s.branch}</bdi>
@@ -216,6 +223,8 @@ export function ScanScreen({ controller, startInReview, simulator, idleMinutes, 
           <Icon name="warning" size={22} /> {t('undoStale')}
         </p>
       )}
+
+      {cameraOn && <CameraScanner onCode={onCameraCode} />}
 
       <section class="last" data-testid="last">
         {last ? (
@@ -253,6 +262,16 @@ export function ScanScreen({ controller, startInReview, simulator, idleMinutes, 
           {formatNumber(tally.total)}
         </bdi>
       </div>
+
+      <button
+        type="button"
+        class={cameraOn ? 'btn btn-primary' : 'btn'}
+        onClick={() => setCameraOn((on) => !on)}
+        data-testid="camera-toggle"
+        aria-pressed={cameraOn}
+      >
+        <Icon name="camera" /> {cameraOn ? t('cameraClose') : t('camera')}
+      </button>
 
       <footer class="scan-actions">
         <button

@@ -25,3 +25,6 @@ private/
 # ...except the single fake sample file.
 !samples/
 !samples/sample-system.csv
+
+# Generated at test time (fake camera video)
+tests/e2e/.generated/

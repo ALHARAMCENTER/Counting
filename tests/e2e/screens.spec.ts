@@ -17,6 +17,10 @@ for (const [lang, dir] of [
     await expect(page.locator('html')).toHaveAttribute('dir', dir);
     await expect(page.getByTestId('last-count')).toHaveText('×2');
     await page.screenshot({ path: `test-results/screens/${lang}-3-scan.png` });
+    await page.getByTestId('camera-toggle').click();
+    await expect(page.getByTestId('camera-panel')).toHaveAttribute('data-status', 'running', { timeout: 20_000 });
+    await page.screenshot({ path: `test-results/screens/${lang}-3b-camera.png` });
+    await page.getByTestId('camera-toggle').click();
     await scan(page, '123456789'); // not in the system file: accepted, shown by its code
     await page.screenshot({ path: `test-results/screens/${lang}-4-unknown.png` });
     await scan(page, 'ثثث'); // Arabic letters (wrong keyboard layout): the red warning stays

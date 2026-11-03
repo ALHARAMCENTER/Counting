@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { configureDevice, firstRun, scan, startSession } from './helpers';
+import { CAMERA_TEXT } from './camera-constants';
 
 test.beforeEach(async ({ page }) => {
   await firstRun(page, 'en');
@@ -214,4 +215,62 @@ test('scanning while the session is still opening: every character kept', async 
   });
   await expect(page.getByTestId('last-name')).toHaveText('DEMO SHIRT B');
   await expect(page.getByTestId('total')).toHaveText('1');
+});
+
+test.describe('phone camera as a second way to read', () => {
+  test('reads a label shown to it, counts it once, closes cleanly, sends nothing out', async ({ page }) => {
+    const external: string[] = [];
+    page.on('request', (r) => {
+      const u = r.url();
+      if (!u.startsWith('http://localhost:4173/') && !u.startsWith('blob:') && !u.startsWith('data:')) external.push(u);
+    });
+    await startSession(page);
+    await page.getByTestId('camera-toggle').click();
+    await expect(page.getByTestId('camera-panel')).toHaveAttribute('data-status', 'running', { timeout: 20_000 });
+
+    // The label stays in front of the camera: it counts ONCE, not on every frame.
+    await expect(page.getByTestId('total')).toHaveText('1', { timeout: 20_000 });
+    await expect(page.getByTestId('last-name')).toHaveText(CAMERA_TEXT);
+    await page.waitForTimeout(4000);
+    await expect(page.getByTestId('total')).toHaveText('1');
+
+    // The hand reader keeps working with the camera open.
+    await scan(page, '0000000001');
+    await expect(page.getByTestId('total')).toHaveText('2');
+
+    // Closing the camera releases it.
+    await page.getByTestId('camera-toggle').click();
+    await expect(page.getByTestId('camera-panel')).toHaveCount(0);
+    expect(await page.evaluate(() => document.querySelectorAll('video').length)).toBe(0);
+    expect(external).toEqual([]);
+  });
+
+  test('the camera is closed when the count is finished, and its reading is part of the count', async ({ page }) => {
+    await startSession(page);
+    await page.getByTestId('camera-toggle').click();
+    await expect(page.getByTestId('total')).toHaveText('1', { timeout: 20_000 });
+    await page.getByTestId('undo').click(); // undo works on a camera reading like any other
+    await page.getByTestId('undo-yes').click();
+    await expect(page.getByTestId('total')).toHaveText('0');
+    await page.getByTestId('camera-toggle').click(); // close it so the label does not count again
+    await page.getByTestId('camera-toggle').click(); // open again: counts again (the label left the view when closed)
+    await expect(page.getByTestId('total')).toHaveText('1', { timeout: 20_000 });
+    await page.getByTestId('finish').click();
+    await expect(page.getByTestId('camera-panel')).toHaveCount(0);
+    await expect(page.getByTestId('sum-pieces')).toHaveText('1');
+  });
+
+  test('camera blocked: a clear message, a retry button, and the hand reader still works', async ({ page }) => {
+    await page.addInitScript(() => {
+      navigator.mediaDevices.getUserMedia = () => Promise.reject(new DOMException('denied', 'NotAllowedError'));
+    });
+    await page.reload();
+    await startSession(page);
+    await page.getByTestId('camera-toggle').click();
+    await expect(page.getByTestId('camera-panel')).toHaveAttribute('data-status', 'denied');
+    await expect(page.getByTestId('camera-msg')).toContainText('Camera blocked');
+    await expect(page.getByTestId('camera-retry')).toBeVisible();
+    await scan(page, '0000000002');
+    await expect(page.getByTestId('total')).toHaveText('1');
+  });
 });

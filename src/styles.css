@@ -635,3 +635,94 @@ h2 {
   letter-spacing: 0.04em;
   word-break: break-all;
 }
+
+/* Camera panel on the scan screen */
+.camera {
+  position: relative;
+  height: 28vh;
+  min-height: 150px;
+  flex: none;
+  overflow: hidden;
+  background: #000;
+  border: 3px solid var(--border);
+  border-radius: var(--radius);
+}
+.camera-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.camera-guide {
+  position: absolute;
+  inset-inline: 8%;
+  top: 50%;
+  height: 2px;
+  background: rgba(255, 40, 40, 0.8);
+  pointer-events: none;
+}
+.camera-hint {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  margin: 0;
+  padding: 4px 8px;
+  text-align: center;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.55);
+}
+.camera-msg {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 12px;
+  text-align: center;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.7);
+  font-weight: 700;
+}
+.camera-flash {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  background: rgba(10, 122, 47, 0.55);
+  border: 6px solid var(--ok);
+}
+
+/* With the camera open the screen is shared: keep Undo and Finish in view. */
+.scan-screen.with-camera {
+  gap: 8px;
+}
+.scan-screen.with-camera .last {
+  padding: 6px;
+  gap: 2px;
+}
+.scan-screen.with-camera .last-name {
+  font-size: clamp(1.3rem, 6.5vw, 2rem);
+}
+.scan-screen.with-camera .last-name.code {
+  font-size: clamp(1.1rem, 5.5vw, 1.6rem);
+}
+.scan-screen.with-camera .last-barcode {
+  font-size: 1rem;
+}
+.scan-screen.with-camera .last-count bdi {
+  font-size: clamp(2.6rem, 15vw, 4.2rem);
+}
+.scan-screen.with-camera .total {
+  padding: 2px 12px;
+}
+.scan-screen.with-camera .total bdi {
+  font-size: 1.8rem;
+}
+.scan-screen.with-camera .scan-actions .btn-huge {
+  min-height: 64px;
+}
