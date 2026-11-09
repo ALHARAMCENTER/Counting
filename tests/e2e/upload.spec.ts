@@ -27,18 +27,24 @@ interface Seen {
 }
 
 /** The fake office computer. `mode` decides the preview answer. */
-async function fakeOffice(page: Page, scope: string, mode: 'ok' | 'bad'): Promise<Seen> {
+async function fakeOffice(page: Page, scope: string, mode: 'ok' | 'bad', queue = 0): Promise<Seen> {
   const key = await keyOf(scope);
   const seen: Seen = { previews: [], commits: [] };
   const files = new Map<string, Buffer>();
-  const events: string[] = [];
+  // Each reply becomes visible at `at` (lets a test see queue positions one after another).
+  const events: { data: string; at: number }[] = [];
 
-  const reply = async (rid: string, body: unknown) => {
+  const reply = async (rid: string, body: unknown, delayMs = 0) => {
     const iv = webcrypto.getRandomValues(new Uint8Array(12));
     const ct = new Uint8Array(await subtle.encrypt({ name: 'AES-GCM', iv, additionalData: enc.encode(rid) }, key, gzipSync(JSON.stringify(body))));
-    const name = `/file/${rid}.bin`;
+    const n = events.length + seen.previews.length * 100 + seen.commits.length * 1000;
+    const name = `/file/${rid}-${n}.bin`;
     files.set(name, Buffer.concat([Buffer.from(iv), Buffer.from(ct)]));
-    events.push(JSON.stringify({ event: 'message', message: JSON.stringify({ id: rid }), attachment: { url: `https://ntfy.sh${name}` } }));
+    const after = events.length ? events[events.length - 1]!.at : 0;
+    events.push({
+      at: Math.max(after, Date.now()) + delayMs,
+      data: JSON.stringify({ id: `ev${n}`, event: 'message', message: JSON.stringify({ id: rid }), attachment: { url: `https://ntfy.sh${name}` } }),
+    });
   };
 
   await page.route('https://ntfy.sh/**', async (route: Route) => {
@@ -47,7 +53,7 @@ async function fakeOffice(page: Page, scope: string, mode: 'ok' | 'bad'): Promis
     if (req.method() === 'OPTIONS') return route.fulfill({ status: 200, headers: CORS });
     if (url.pathname.startsWith('/file/')) return route.fulfill({ status: 200, headers: CORS, body: files.get(url.pathname) ?? Buffer.alloc(0) });
     if (url.pathname === `/${topic}r/sse`) {
-      const ev = events.shift();
+      const ev = events[0] && events[0].at <= Date.now() ? events.shift()!.data : '';
       return route.fulfill({ status: 200, headers: { ...CORS, 'Content-Type': 'text/event-stream' }, body: `retry: 200\n${ev ? `data: ${ev}\n` : ''}\n` });
     }
     if (url.pathname !== `/${topic}q`) return route.fulfill({ status: 404, headers: CORS });
@@ -69,24 +75,33 @@ async function fakeOffice(page: Page, scope: string, mode: 'ok' | 'bad'): Promis
       expect(rows[0]).toEqual(['التاريخ والوقت', 'الباركود', 'الفرع', 'الموظف']);
       const data = rows.slice(1).filter((x) => x.length);
       seen.previews.push({ branch: r.b, pieces: data.length, rows: data });
+      if (queue > 0) {
+        // Other devices first: "n before you", then "running now", then the preview.
+        await reply(rid, { ok: true, wait: queue });
+        await reply(rid, { ok: true, wait: 0 }, 1500);
+      }
       const per = new Map<string, number>();
       for (const x of data) per.set(x[1]!, (per.get(x[1]!) ?? 0) + 1);
       if (mode === 'bad') {
         await reply(rid, { ok: true, branch: r.b, msg: 'invalid codes', codes: 0, qty: 0, rows: [], bad: ['0000000001'], app: { pieces: data.length, codes: per.size }, mismatch: false, token: '', locked: true });
       } else {
-        await reply(rid, {
-          ok: true,
-          branch: r.b,
-          msg: 'preview ok',
-          codes: per.size,
-          qty: data.length,
-          rows: [...per].map(([c, q]) => [c, 'M' + c.slice(-3), '0000 - DEMO', '000 - DEMO', '10.00', q]),
-          bad: [],
-          app: { pieces: data.length, codes: per.size },
-          mismatch: false,
-          token: 'ab'.repeat(12),
-          locked: true,
-        });
+        await reply(
+          rid,
+          {
+            ok: true,
+            branch: r.b,
+            msg: 'preview ok',
+            codes: per.size,
+            qty: data.length,
+            rows: [...per].map(([c, q]) => [c, 'M' + c.slice(-3), '0000 - DEMO', '000 - DEMO', '10.00', q]),
+            bad: [],
+            app: { pieces: data.length, codes: per.size },
+            mismatch: false,
+            token: 'ab'.repeat(12),
+            locked: true,
+          },
+          queue > 0 ? 1500 : 0,
+        );
       }
     } else {
       seen.commits.push(r.t);
@@ -197,4 +212,17 @@ test('supervisor link: branch is chosen; without a link there is no upload butto
   await page.getByTestId('upload-preview-btn').click();
   await expect(page.getByTestId('upload-match')).toBeVisible({ timeout: 30_000 });
   expect(seen.previews[0]!.branch).toBe('803');
+});
+
+test('several devices at once: this device shows how many are before it, then runs', async ({ page }) => {
+  await fakeOffice(page, '711', 'ok', 2);
+  await openWithLink(page, '711');
+  await demoCatalog(page);
+  await countAndClose(page, null, ['0000000002', '0000000003TST00']);
+  await page.getByTestId('open-upload').click();
+  await page.getByTestId('upload-preview-btn').click();
+  await expect(page.getByTestId('upload-queue')).toHaveAttribute('data-ahead', '2', { timeout: 15_000 });
+  await expect(page.getByTestId('upload-queue')).toContainText('2 before you');
+  await expect(page.getByTestId('upload-queue')).toHaveAttribute('data-ahead', '0', { timeout: 15_000 });
+  await expect(page.getByTestId('upload-match')).toBeVisible({ timeout: 15_000 });
 });

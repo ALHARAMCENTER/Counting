@@ -79,13 +79,27 @@ async function decryptReply(key: CryptoKey, rid: string, url: string): Promise<u
   return JSON.parse(text);
 }
 
-/** Sends one request and waits for its reply (or rejects with a ChannelError). */
-export async function sendRequest(link: DeviceLink, req: CountRequest, file: Uint8Array | null, timeoutMs: number): Promise<Record<string, unknown>> {
+/** While a request waits its turn the office computer may wait this long between two updates. */
+const QUEUE_TIMEOUT = 10 * 60_000;
+
+/**
+ * Sends one request and waits for its final reply (or rejects with a ChannelError).
+ * Several devices may send at the same time: the office computer handles them one
+ * by one and first answers `{wait: n}` (n requests before this one; 0 = now running).
+ */
+export async function sendRequest(
+  link: DeviceLink,
+  req: CountRequest,
+  file: Uint8Array | null,
+  timeoutMs: number,
+  onWait?: (ahead: number) => void,
+): Promise<Record<string, unknown>> {
   const [key, topic, skew] = await Promise.all([keyOf(link), topicOf(link.pw), clockSkew()]);
   const id = hex(crypto.getRandomValues(new Uint8Array(8)));
   const rid = id + 'c';
   return new Promise((resolve, reject) => {
     let done = false;
+    const seenEvents = new Set<string>();
     const es = new EventSource(`${NTFY}/${topic}r/sse?since=1m`);
     const finish = (err: ChannelError | null, value?: Record<string, unknown>) => {
       if (done) return;
@@ -95,20 +109,34 @@ export async function sendRequest(link: DeviceLink, req: CountRequest, file: Uin
       if (err) reject(err);
       else resolve(value!);
     };
-    const timer = setTimeout(() => finish(new ChannelError('timeout')), timeoutMs);
+    let timer = setTimeout(() => finish(new ChannelError('timeout')), timeoutMs);
     es.onmessage = async (ev) => {
-      let m: { event?: string; message?: string; attachment?: { url?: string } };
+      let m: { id?: string; event?: string; message?: string; attachment?: { url?: string } };
       try {
         m = JSON.parse(ev.data);
         if (m.event !== 'message' || JSON.parse(m.message ?? '{}').id !== rid) return;
       } catch {
         return;
       }
-      try {
-        finish(null, (await decryptReply(key, rid, m.attachment?.url ?? '')) as Record<string, unknown>);
-      } catch {
-        finish(new ChannelError('reply'));
+      if (m.id) {
+        if (seenEvents.has(m.id)) return; // the same event again after a reconnection
+        seenEvents.add(m.id);
       }
+      let r: Record<string, unknown>;
+      try {
+        r = (await decryptReply(key, rid, m.attachment?.url ?? '')) as Record<string, unknown>;
+      } catch {
+        return finish(new ChannelError('reply'));
+      }
+      if (r.ok === true && typeof r.wait === 'number') {
+        // Still in the queue (or running): keep waiting, longer.
+        if (done) return;
+        clearTimeout(timer);
+        timer = setTimeout(() => finish(new ChannelError('timeout')), Math.max(timeoutMs, QUEUE_TIMEOUT));
+        onWait?.(r.wait);
+        return;
+      }
+      finish(null, r);
     };
     (async () => {
       try {

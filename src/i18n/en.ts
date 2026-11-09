@@ -248,6 +248,8 @@ export const en = {
   linkCardBad: 'This is not a valid branch link.',
   linkCardRemove: 'Remove link',
   supervisorAll: 'Supervisor (all branches)',
+  uploadQueue: '{n} before you in the queue. This device goes automatically when its turn comes. Keep the app open.',
+  uploadRunning: 'Your turn: running in the system now…',
 } as const;
 
 export type MessageKey = keyof typeof en;

@@ -63,6 +63,8 @@ export function UploadScreen({ link, onBack }: { link: DeviceLink | null; onBack
   const [error, setError] = useState('');
   const [preview, setPreview] = useState<Preview | null>(null);
   const [done, setDone] = useState<Done | null>(null);
+  /** Requests before this one at the office computer (null = no answer yet; 0 = running now). */
+  const [ahead, setAhead] = useState<number | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -118,9 +120,10 @@ export function UploadScreen({ link, onBack }: { link: DeviceLink | null; onBack
     if (!branch || ids.length === 0) return;
     setError('');
     setStep('sending');
+    setAhead(null);
     try {
       const file = await scanListForUpload(ids);
-      const r = await sendRequest(link, { k: 'cprev', b: branch, h: await fileHash(file.data), n: file.pieces }, file.data, PREVIEW_TIMEOUT);
+      const r = await sendRequest(link, { k: 'cprev', b: branch, h: await fileHash(file.data), n: file.pieces }, file.data, PREVIEW_TIMEOUT, setAhead);
       if (!r.ok) {
         setError(t('uploadErrServer', { msg: String(r.error ?? '') }));
         setStep('pick');
@@ -138,8 +141,9 @@ export function UploadScreen({ link, onBack }: { link: DeviceLink | null; onBack
     if (!preview?.token) return;
     setError('');
     setStep('committing');
+    setAhead(null);
     try {
-      const r = await sendRequest(link, { k: 'ccommit', t: preview.token }, null, COMMIT_TIMEOUT);
+      const r = await sendRequest(link, { k: 'ccommit', t: preview.token }, null, COMMIT_TIMEOUT, setAhead);
       if (!r.ok) {
         setError(t('uploadErrServer', { msg: String(r.error ?? '') }));
         setPreview({ ...preview, token: '' }); // a token is used once: preview again
@@ -163,6 +167,14 @@ export function UploadScreen({ link, onBack }: { link: DeviceLink | null; onBack
       setStep('preview');
     }
   };
+
+  /** Where this request is at the office computer: waiting behind others, or running now. */
+  const queueNote =
+    ahead === null ? null : (
+      <p class="banner banner-info" data-testid="upload-queue" data-ahead={ahead}>
+        {ahead > 0 ? t('uploadQueue', { n: ahead }) : t('uploadRunning')}
+      </p>
+    );
 
   const errorBanner = error && (
     <p class="banner banner-warn" role="alert" data-testid="upload-error">
@@ -297,9 +309,12 @@ export function UploadScreen({ link, onBack }: { link: DeviceLink | null; onBack
           </section>
         )}
         {step === 'committing' && (
-          <p class="banner banner-info" data-testid="upload-committing">
-            {t('uploadCommitting')}
-          </p>
+          <>
+            <p class="banner banner-info" data-testid="upload-committing">
+              {t('uploadCommitting')}
+            </p>
+            {queueNote}
+          </>
         )}
         {step === 'preview' && !p.token && (
           <button type="button" class="btn btn-huge" data-testid="upload-again" onClick={() => setStep('pick')}>
@@ -391,9 +406,12 @@ export function UploadScreen({ link, onBack }: { link: DeviceLink | null; onBack
         </span>
       </p>
       {step === 'sending' ? (
-        <p class="banner banner-info" data-testid="upload-sending">
-          {t('uploadSending')}
-        </p>
+        <>
+          <p class="banner banner-info" data-testid="upload-sending">
+            {t('uploadSending')}
+          </p>
+          {queueNote}
+        </>
       ) : (
         <button type="button" class="btn btn-huge btn-primary" disabled={ids.length === 0} data-testid="upload-preview-btn" onClick={sendPreview}>
           {t('uploadPreviewBtn')}

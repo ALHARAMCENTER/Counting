@@ -248,4 +248,6 @@ export const ur: Messages = {
   linkCardBad: 'یہ درست برانچ لنک نہیں ہے۔',
   linkCardRemove: 'لنک ہٹائیں',
   supervisorAll: 'سپروائزر (تمام برانچیں)',
+  uploadQueue: 'آپ سے پہلے {n} انتظار میں ہیں۔ باری آنے پر یہ ڈیوائس خود شروع ہوگی، ایپ بند نہ کریں۔',
+  uploadRunning: 'آپ کی باری: سسٹم میں ابھی جاری ہے…',
 };

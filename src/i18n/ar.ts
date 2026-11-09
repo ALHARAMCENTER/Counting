@@ -248,4 +248,6 @@ export const ar: Messages = {
   linkCardBad: 'هذا ليس رابط فرع صالحًا.',
   linkCardRemove: 'إلغاء الربط',
   supervisorAll: 'مشرف (كل الفروع)',
+  uploadQueue: 'قبلك {n} في الانتظار. سيبدأ جرد هذا الجهاز تلقائيًا عند دوره، لا تغلق التطبيق.',
+  uploadRunning: 'جاء دورك: جارٍ التنفيذ الآن في النظام…',
 };
