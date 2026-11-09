@@ -67,3 +67,8 @@ export async function getTuning(): Promise<ScanTuning> {
   return { ...DEFAULT_TUNING, ...(await getSetting<Partial<ScanTuning>>('tuning')) };
 }
 export const setTuning = (t: ScanTuning) => setSetting('tuning', t);
+
+/** The supervisor's inquiry page link (with its access code). Device only, never in the repository. */
+export const getInquiryLink = () => getSetting<string>('inquiryLink');
+export const setInquiryLink = (url: string) => setSetting('inquiryLink', url);
+export const clearInquiryLink = () => getDB().settings.delete('inquiryLink');
