@@ -726,3 +726,33 @@ h2 {
 .scan-screen.with-camera .scan-actions .btn-huge {
   min-height: 64px;
 }
+
+/* Send to system: system vs device totals, and the system preview rows */
+.upload-sum,
+.upload-rows {
+  width: 100%;
+  border-collapse: collapse;
+}
+.upload-sum th,
+.upload-sum td,
+.upload-rows th,
+.upload-rows td {
+  border: 1px solid #c8c8c8;
+  padding: 6px 8px;
+  text-align: start;
+}
+.upload-sum td {
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+.upload-rows {
+  font-size: 0.9rem;
+}
+.upload-rows td:last-child {
+  font-weight: 700;
+}
+.linked-branch {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--primary);
+}

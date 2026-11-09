@@ -19,6 +19,8 @@ import { LanguageScreen } from './screens/LanguageScreen';
 import { HomeScreen } from './screens/HomeScreen';
 import { SettingsScreen } from './screens/SettingsScreen';
 import { InsecureScreen } from './screens/InsecureScreen';
+import { UploadScreen } from './screens/UploadScreen';
+import { getDeviceLink, takeLinkFromAddress, type DeviceLink } from './link/deviceLink';
 
 type Route =
   | 'loading'
@@ -31,6 +33,7 @@ type Route =
   | 'other-tab'
   | 'export'
   | 'reconcile'
+  | 'upload'
   | 'help';
 
 interface ActiveScan {
@@ -50,6 +53,9 @@ export function App() {
   const [tuning, setTuningState] = useState<ScanTuning>(DEFAULT_TUNING);
   // Supervisor PIN given during the current visit to settings; cleared on leaving.
   const [supervisor, setSupervisor] = useState(false);
+  // Branch link of this device (#c=…): fixes the branch and allows sending counts to the office system.
+  const [link, setLink] = useState<DeviceLink | null>(null);
+  const [linkNotice, setLinkNotice] = useState(false);
 
   const i18n = useMemo(() => ({ lang, t: makeT(lang) }), [lang]);
   useEffect(() => applyDocumentLang(lang), [lang]);
@@ -74,6 +80,9 @@ export function App() {
       // A second window would also listen to the reader: refuse it.
       if (!(await claimSingleTab())) return setRoute('other-tab');
       void removeLegacyInquiryLink().catch(() => {});
+      const taken = await takeLinkFromAddress();
+      setLink(taken.link);
+      setLinkNotice(taken.changed);
       const id = await getDeviceId();
       setDeviceId(id);
       setSim(await getSimulator());
@@ -175,6 +184,12 @@ export function App() {
             setRoute('settings');
           }}
           onExport={() => setRoute('export')}
+          link={link}
+          linkNotice={linkNotice}
+          onUpload={() => {
+            setLinkNotice(false);
+            setRoute('upload');
+          }}
           onStart={() => {
             setClosedNotice(false);
             setRoute('start-session');
@@ -190,6 +205,7 @@ export function App() {
           onBack={async () => {
             setSim(await getSimulator());
             setTuningState(await getTuning());
+            setLink(await getDeviceLink());
             setSupervisor(false);
             setRoute('home');
           }}
@@ -210,6 +226,9 @@ export function App() {
     case 'export':
       screen = <ExportScreen onBack={() => setRoute('home')} />;
       break;
+    case 'upload':
+      screen = <UploadScreen link={link} onBack={() => setRoute('home')} />;
+      break;
     case 'help':
       screen = <HelpScreen onBack={() => setRoute('settings')} />;
       break;
@@ -217,7 +236,7 @@ export function App() {
       screen = <ReconcileScreen onBack={() => setRoute('settings')} />;
       break;
     case 'start-session':
-      screen = <StartSessionScreen onCancel={() => setRoute('home')} onStart={startSession} />;
+      screen = <StartSessionScreen onCancel={() => setRoute('home')} onStart={startSession} link={link} />;
       break;
     case 'scan':
       screen = active && (

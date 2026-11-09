@@ -18,7 +18,8 @@ function buildId(): string {
   return `${day} UTC${sha ? ` · ${sha}` : ''}`;
 }
 
-// Privacy guard: the built app may not talk to any other origin.
+// Privacy guard: the built app may not talk to any other origin, except ntfy.sh when a
+// closed count is sent to the office system (encrypted on the phone, see src/link/channel.ts).
 const CSP = [
   "default-src 'self'",
   // 'wasm-unsafe-eval' only allows compiling WebAssembly (the barcode decoder);
@@ -26,7 +27,8 @@ const CSP = [
   "script-src 'self' 'wasm-unsafe-eval'",
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob:",
-  "connect-src 'self'",
+  // ntfy.sh only for "Send to system": the encrypted count goes to the office computer on request.
+  "connect-src 'self' https://ntfy.sh",
   "font-src 'self'",
   "worker-src 'self'",
   "manifest-src 'self'",

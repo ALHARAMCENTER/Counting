@@ -23,6 +23,8 @@ const ALLOWED_HOSTS = new Set([
   // Default .wasm address inside zxing-wasm. src/scan/decoder.ts replaces it
   // with the local file, and the page's security policy would block it anyway.
   'fastly.jsdelivr.net',
+  // "Send to system" (src/link/channel.ts): the only network use, on request, encrypted.
+  'ntfy.sh',
 ]);
 
 const files = [];

@@ -5,6 +5,7 @@ import { ScannerInput } from '../scan/ScannerInput';
 import type { PersistState } from '../lib/storage';
 import { Icon } from '../ui/Icon';
 import { StorageBanner } from '../ui/StorageBanner';
+import { lockedBranch, type DeviceLink } from '../link/deviceLink';
 
 interface Props {
   persist: PersistState | null;
@@ -15,9 +16,14 @@ interface Props {
   onStart: () => void;
   onExport: () => void;
   closedNotice: boolean;
+  link: DeviceLink | null;
+  /** The link in the address was just saved on this device. */
+  linkNotice: boolean;
+  onUpload: () => void;
 }
 
-export function HomeScreen({ persist, onRetryPersist, updateReady, onUpdate, onSettings, onStart, onExport, closedNotice }: Props) {
+export function HomeScreen({ persist, onRetryPersist, updateReady, onUpdate, onSettings, onStart, onExport, closedNotice, link, linkNotice, onUpload }: Props) {
+  const branch = lockedBranch(link);
   const { t } = useI18n();
   const [blocked, setBlocked] = useState(false);
   return (
@@ -32,7 +38,17 @@ export function HomeScreen({ persist, onRetryPersist, updateReady, onUpdate, onS
       />
       <header class="topbar">
         <h1>{t('homeTitle')}</h1>
+        {link && (
+          <span class="linked-branch" data-testid="linked-branch">
+            {branch ? t('linkedBranch', { b: branch }) : t('supervisorAll')}
+          </span>
+        )}
       </header>
+      {linkNotice && link && (
+        <p class="banner banner-ok" data-testid="link-saved">
+          <Icon name="check" size={22} /> {branch ? t('linkSaved', { b: branch }) : t('linkSavedSup')}
+        </p>
+      )}
       {blocked && (
         <p class="banner banner-warn" role="alert" data-testid="not-saved">
           <Icon name="warning" size={22} /> {t('notSaved')}
@@ -58,6 +74,11 @@ export function HomeScreen({ persist, onRetryPersist, updateReady, onUpdate, onS
         </button>
       </div>
       <footer class="footer">
+        {link && (
+          <button type="button" class="btn btn-secondary" onClick={onUpload} data-testid="open-upload">
+            <Icon name="lock" /> {t('uploadTitle')}
+          </button>
+        )}
         <button type="button" class="btn btn-secondary" onClick={onExport} data-testid="open-export">
           <Icon name="download" /> {t('export')}
         </button>

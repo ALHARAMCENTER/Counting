@@ -8,7 +8,7 @@ import { safeText, toCsv } from './csv';
 import { buildXlsx } from './xlsx';
 import Dexie from 'dexie';
 import { sectionFileName } from '../domain/sections';
-import { SCAN_LIST_HEADER, buildScanList } from './scanList';
+import { SCAN_LIST_HEADER, buildScanList, type ScanListRow } from './scanList';
 import { formatLocalTime } from '../lib/time';
 
 export async function loadSessions(ids?: readonly string[]): Promise<SessionWithLog[]> {
@@ -102,6 +102,34 @@ export async function exportCount(scope: 'session' | 'all', ids: readonly string
   return { bundle, fileName };
 }
 
+/** The scan-list Excel file (sheet "المسحات" + "Check"). The office system reads this exact layout. */
+async function scanListXlsx(rows: ScanListRow[], bundle: CountBundle) {
+  const table = rows.map((r) => [r.time, r.barcode, safeText(r.branch), safeText(r.employee)]);
+  return buildXlsx([
+    { name: 'المسحات', rows: [[...SCAN_LIST_HEADER], ...table], textColumns: [0, 1], widths: [20, 24, 16, 18] },
+    {
+      name: 'Check',
+      rows: [
+        ['Total pieces', rows.length],
+        ['Checksum', bundle.checksum],
+      ],
+      widths: [16, 20],
+    },
+  ]);
+}
+
+/**
+ * The scan-list Excel file for sending to the office system (nothing is
+ * downloaded or logged). Pieces and distinct barcodes are counted from the
+ * same rows that go into the file.
+ */
+export async function scanListForUpload(ids: readonly string[]) {
+  const items = await loadSessions(ids);
+  const bundle = await buildCountBundle(items);
+  const rows = buildScanList(items);
+  return { data: await scanListXlsx(rows, bundle), pieces: rows.length, codes: new Set(rows.map((r) => r.barcode)).size };
+}
+
 /**
  * The scan list: time, barcode, branch, employee: one row per piece.
  * Undone scans are removed. This is also the file saved automatically when a
@@ -113,22 +141,11 @@ export async function exportScanList(scope: 'session' | 'all', ids: readonly str
   const rows = buildScanList(items);
   const fileName = `scans-${nameParts(bundle.sessions.map((x) => x.session), scope)}-${stamp()}.${format}`;
 
-  const table = rows.map((r) => [r.time, r.barcode, safeText(r.branch), safeText(r.employee)]);
   if (format === 'csv') {
+    const table = rows.map((r) => [r.time, r.barcode, safeText(r.branch), safeText(r.employee)]);
     downloadFile(fileName, toCsv([[...SCAN_LIST_HEADER], ...table]), CSV_TYPE);
   } else {
-    const data = await buildXlsx([
-      { name: 'المسحات', rows: [[...SCAN_LIST_HEADER], ...table], textColumns: [0, 1], widths: [20, 24, 16, 18] },
-      {
-        name: 'Check',
-        rows: [
-          ['Total pieces', rows.length],
-          ['Checksum', bundle.checksum],
-        ],
-        widths: [16, 20],
-      },
-    ]);
-    downloadFile(fileName, data, XLSX_TYPE);
+    downloadFile(fileName, await scanListXlsx(rows, bundle), XLSX_TYPE);
   }
   await logExport({
     scope,

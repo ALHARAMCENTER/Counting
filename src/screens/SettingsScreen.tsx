@@ -4,6 +4,7 @@ import { getSimulator, setSimulator } from '../db/settings';
 import { DEMO_CATALOG, replaceCatalog } from '../db/catalog';
 import { Icon } from '../ui/Icon';
 import { BranchesCard } from './BranchesCard';
+import { LinkCard } from './LinkCard';
 import { SessionsCard } from './SessionsCard';
 import { TuningCard } from './TuningCard';
 import { ImportCard } from './supervisor/ImportCard';
@@ -90,6 +91,8 @@ export function SettingsScreen({ onLang, onBack, onReopened, onReconcile, onHelp
           <h2 class="section-title">
             <Icon name="lock" /> {t('supervisorSettings')}
           </h2>
+          <LinkCard />
+
           <ImportCard />
 
           <SessionsCard onReopened={onReopened} />

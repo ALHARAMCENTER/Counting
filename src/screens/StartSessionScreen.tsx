@@ -3,6 +3,7 @@ import { useI18n } from '../i18n';
 import { getBranches, getLastBranch, getSetting, setLastBranch, setSetting } from '../db/settings';
 import { SECTION_KEYS, sectionLabel } from '../domain/sections';
 import { Icon } from '../ui/Icon';
+import { lockedBranch, type DeviceLink } from '../link/deviceLink';
 
 export interface SessionChoice {
   branch: string;
@@ -13,6 +14,8 @@ export interface SessionChoice {
 interface Props {
   onCancel: () => void;
   onStart: (c: SessionChoice) => void;
+  /** A branch link fixes the branch: the worker cannot pick another one by mistake. */
+  link?: DeviceLink | null;
 }
 
 type Step = 'employee' | 'branch' | 'section';
@@ -24,7 +27,8 @@ const clean = (s: string) => s.trim().replace(/\s+/g, ' ');
  * supervisor's list) → section (one tap) → scanning starts. With a single
  * branch in the list that step is skipped.
  */
-export function StartSessionScreen({ onCancel, onStart }: Props) {
+export function StartSessionScreen({ onCancel, onStart, link = null }: Props) {
+  const fixed = lockedBranch(link);
   const { t } = useI18n();
   const [branches, setBranchList] = useState<string[] | null>(null);
   const [lastBranch, setLast] = useState('');
@@ -39,7 +43,7 @@ export function StartSessionScreen({ onCancel, onStart }: Props) {
       const [list, lastB, lastE] = await Promise.all([getBranches(), getLastBranch(), getSetting<string>('lastEmployee')]);
       setLast(lastB ?? '');
       setEmployee((typed) => typed || lastE || ''); // never replace what was already typed
-      setBranchList(list);
+      setBranchList(fixed ? [fixed] : list);
     })();
   }, []);
 
