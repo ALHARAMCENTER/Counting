@@ -1,13 +1,12 @@
 import { useEffect, useMemo, useState } from 'preact/hooks';
 import { applyDocumentLang, detectDeviceLang, I18nContext, makeT, type Lang } from './i18n';
-import { getDeviceId, getLang, getSimulator, getTuning, setLang, DEFAULT_TUNING, type ScanTuning } from './db/settings';
+import { getDeviceId, getLang, getSimulator, getTuning, removeLegacyInquiryLink, setLang, DEFAULT_TUNING, type ScanTuning } from './db/settings';
 import { claimSingleTab } from './lib/singleTab';
 import { keyboardHub } from './scan/hub';
 import { getSession } from './db/log';
 import { Icon } from './ui/Icon';
 import { ExportScreen } from './screens/ExportScreen';
 import { HelpScreen } from './screens/HelpScreen';
-import { InquiryScreen } from './screens/InquiryScreen';
 import { ReconcileScreen } from './screens/supervisor/ReconcileScreen';
 import { findActiveSession, openSession } from './db/log';
 import { ScanController } from './scan/ScanController';
@@ -32,8 +31,7 @@ type Route =
   | 'other-tab'
   | 'export'
   | 'reconcile'
-  | 'help'
-  | 'inquiry';
+  | 'help';
 
 interface ActiveScan {
   controller: ScanController;
@@ -75,6 +73,7 @@ export function App() {
     (async () => {
       // A second window would also listen to the reader: refuse it.
       if (!(await claimSingleTab())) return setRoute('other-tab');
+      void removeLegacyInquiryLink().catch(() => {});
       const id = await getDeviceId();
       setDeviceId(id);
       setSim(await getSimulator());
@@ -198,7 +197,6 @@ export function App() {
           onUnlock={() => setSupervisor(true)}
           onReconcile={() => setRoute('reconcile')}
           onHelp={() => setRoute('help')}
-          onOpenInquiry={() => setRoute('inquiry')}
           onWiped={() => location.reload()}
           onReopened={async (id) => {
             setSupervisor(false);
@@ -211,9 +209,6 @@ export function App() {
       break;
     case 'export':
       screen = <ExportScreen onBack={() => setRoute('home')} />;
-      break;
-    case 'inquiry':
-      screen = <InquiryScreen onBack={() => setRoute('settings')} />;
       break;
     case 'help':
       screen = <HelpScreen onBack={() => setRoute('settings')} />;

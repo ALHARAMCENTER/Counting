@@ -68,7 +68,8 @@ export async function getTuning(): Promise<ScanTuning> {
 }
 export const setTuning = (t: ScanTuning) => setSetting('tuning', t);
 
-/** The supervisor's inquiry page link (with its access code). Device only, never in the repository. */
-export const getInquiryLink = () => getSetting<string>('inquiryLink');
-export const setInquiryLink = (url: string) => setSetting('inquiryLink', url);
-export const clearInquiryLink = () => getDB().settings.delete('inquiryLink');
+/**
+ * An earlier version could save the link of a private page on the device. That
+ * feature was removed: forget the link wherever it was saved.
+ */
+export const removeLegacyInquiryLink = () => getDB().settings.delete('inquiryLink');

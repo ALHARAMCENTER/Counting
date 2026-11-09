@@ -726,23 +726,3 @@ h2 {
 .scan-screen.with-camera .scan-actions .btn-huge {
   min-height: 64px;
 }
-
-/* The supervisor's inquiry page, shown full height inside the app */
-.inquiry-screen {
-  display: flex;
-  flex-direction: column;
-  height: 100dvh;
-  gap: 8px;
-  padding: max(8px, env(safe-area-inset-top)) 8px max(8px, env(safe-area-inset-bottom));
-}
-.inquiry-top h1 {
-  font-size: 1.3rem;
-}
-.inquiry-frame {
-  flex: 1;
-  min-height: 0;
-  width: 100%;
-  border: 2px solid var(--border);
-  border-radius: var(--radius);
-  background: #fff;
-}

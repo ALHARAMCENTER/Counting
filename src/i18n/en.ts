@@ -203,14 +203,6 @@ export const en = {
   cameraDenied: 'Camera blocked. Allow the camera for this app in the phone settings.',
   cameraUnavailable: 'Camera not available.',
   cameraHint: 'Point at the barcode. Move the next piece in to count it.',
-  inquiryTitle: 'Inquiry',
-  inquiryLinkLabel: 'Page link',
-  inquirySaved: 'Link saved on this device.',
-  inquiryOpen: 'Open inquiry',
-  inquiryRemove: 'Remove the link',
-  inquiryInvalid: 'Not a valid link. Use the page link exactly as you received it.',
-  inquiryNote: 'Opens your own inquiry page inside the app. You type its password in the page itself. It needs the internet, and the page talks to the outside. The link stays on this device only.',
-  inquiryScanHint: 'Tap the search box in the page first, then scan.',
 } as const;
 
 export type MessageKey = keyof typeof en;

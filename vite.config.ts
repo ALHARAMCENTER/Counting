@@ -30,9 +30,6 @@ const CSP = [
   "font-src 'self'",
   "worker-src 'self'",
   "manifest-src 'self'",
-  // The one outside page the supervisor can open inside the app: their own
-  // inquiry page. No other site can be framed.
-  'frame-src https://newsaleh.github.io',
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'none'",

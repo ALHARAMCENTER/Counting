@@ -23,8 +23,6 @@ const ALLOWED_HOSTS = new Set([
   // Default .wasm address inside zxing-wasm. src/scan/decoder.ts replaces it
   // with the local file, and the page's security policy would block it anyway.
   'fastly.jsdelivr.net',
-  // The supervisor's own inquiry page: the only frame the CSP allows (frame-src).
-  'newsaleh.github.io',
 ]);
 
 const files = [];
@@ -49,11 +47,6 @@ for (const f of files.filter((f) => /\.(js|html|css|webmanifest|svg|json)$/.test
 const html = readFileSync(join(DIST, 'index.html'), 'utf8');
 if (!/Content-Security-Policy[^>]*connect-src 'self'/.test(html)) {
   console.error('CSP meta tag missing from dist/index.html');
-  failed = true;
-}
-
-if (!/frame-src https:\/\/newsaleh\.github\.io(;|")/.test(html)) {
-  console.error('CSP frame-src must allow exactly the inquiry page host');
   failed = true;
 }
 

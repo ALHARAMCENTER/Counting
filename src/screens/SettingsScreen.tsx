@@ -9,7 +9,6 @@ import { TuningCard } from './TuningCard';
 import { ImportCard } from './supervisor/ImportCard';
 import { MergeCard } from './supervisor/MergeCard';
 import { WipeCard } from './supervisor/WipeCard';
-import { InquiryCard } from './supervisor/InquiryCard';
 import { PinGate } from '../ui/PinGate';
 
 interface Props {
@@ -18,7 +17,6 @@ interface Props {
   onReopened: (sessionId: string) => void;
   onReconcile: () => void;
   onHelp: () => void;
-  onOpenInquiry: () => void;
   onWiped: () => void;
   /** Supervisor PIN given during this visit to settings. */
   unlocked: boolean;
@@ -32,7 +30,7 @@ const isIOS = () => /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.p
  * can change or remove count data sits under "Supervisor settings", which asks
  * for the PIN once per visit.
  */
-export function SettingsScreen({ onLang, onBack, onReopened, onReconcile, onHelp, onOpenInquiry, onWiped, unlocked, onUnlock }: Props) {
+export function SettingsScreen({ onLang, onBack, onReopened, onReconcile, onHelp, onWiped, unlocked, onUnlock }: Props) {
   const { t, lang } = useI18n();
   const [askPin, setAskPin] = useState(false);
   const [sim, setSim] = useState(false);
@@ -92,8 +90,6 @@ export function SettingsScreen({ onLang, onBack, onReopened, onReconcile, onHelp
           <h2 class="section-title">
             <Icon name="lock" /> {t('supervisorSettings')}
           </h2>
-          <InquiryCard onOpen={onOpenInquiry} />
-
           <ImportCard />
 
           <SessionsCard onReopened={onReopened} />
