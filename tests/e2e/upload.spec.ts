@@ -99,6 +99,7 @@ async function fakeOffice(page: Page, scope: string, mode: 'ok' | 'bad', queue =
             mismatch: false,
             token: 'ab'.repeat(12),
             locked: true,
+            overlap: queue > 0 ? { done: ['0000000002'], doneN: 1, pending: ['0000000003TST00'], pendingN: 1, test: true } : undefined,
           },
           queue > 0 ? 1500 : 0,
         );
@@ -214,7 +215,7 @@ test('supervisor link: branch is chosen; without a link there is no upload butto
   expect(seen.previews[0]!.branch).toBe('803');
 });
 
-test('several devices at once: this device shows how many are before it, then runs', async ({ page }) => {
+test('several devices at once: place in the queue, then a warning for items also in another count', async ({ page }) => {
   await fakeOffice(page, '711', 'ok', 2);
   await openWithLink(page, '711');
   await demoCatalog(page);
@@ -225,4 +226,10 @@ test('several devices at once: this device shows how many are before it, then ru
   await expect(page.getByTestId('upload-queue')).toContainText('2 before you');
   await expect(page.getByTestId('upload-queue')).toHaveAttribute('data-ahead', '0', { timeout: 15_000 });
   await expect(page.getByTestId('upload-match')).toBeVisible({ timeout: 15_000 });
+  // Same items in another count of this branch: the last upload replaces the earlier one.
+  await expect(page.getByTestId('upload-overlap-done')).toContainText('1 items');
+  await expect(page.getByTestId('upload-overlap-done')).toContainText('test approvals');
+  await expect(page.getByTestId('upload-overlap-pending')).toContainText('The one uploaded last');
+  await page.getByTestId('upload-overlap-done').locator('summary').click();
+  await expect(page.getByTestId('upload-overlap-done')).toContainText('0000000002');
 });

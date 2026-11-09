@@ -250,6 +250,9 @@ export const en = {
   supervisorAll: 'Supervisor (all branches)',
   uploadQueue: '{n} before you in the queue. This device goes automatically when its turn comes. Keep the app open.',
   uploadRunning: 'Your turn: running in the system now…',
+  uploadOverlapDone: '{n} items of this count were uploaded today for this branch from another count. If you upload, your quantities replace theirs.',
+  uploadOverlapPending: '{n} items of this count are in another count of this branch that is not uploaded yet. The one uploaded last is the one that stays.',
+  uploadOverlapTest: '(test approvals: nothing was really uploaded)',
 } as const;
 
 export type MessageKey = keyof typeof en;

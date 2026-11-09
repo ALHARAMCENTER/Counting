@@ -37,6 +37,12 @@ interface Preview {
   mismatch: boolean;
   token: string;
   locked: boolean;
+  /**
+   * Items of this count that are also in another count of the same branch. In the
+   * system the last upload replaces the earlier quantities of the same items.
+   * done: uploaded today from another count; pending: previewed elsewhere, not uploaded yet.
+   */
+  overlap?: { done: string[]; doneN: number; pending: string[]; pendingN: number; test: boolean };
 }
 
 interface Done {
@@ -266,6 +272,27 @@ export function UploadScreen({ link, onBack }: { link: DeviceLink | null; onBack
                 <Icon name="warning" size={22} /> {t('uploadMismatch')}
               </p>
             )
+          )}
+          {p.overlap && p.overlap.doneN > 0 && (
+            <details class="banner banner-warn" role="alert" data-testid="upload-overlap-done">
+              <summary>
+                <Icon name="warning" size={22} /> {t('uploadOverlapDone', { n: p.overlap.doneN })}
+                {p.overlap.test && ` ${t('uploadOverlapTest')}`}
+              </summary>
+              <p class="mono">
+                <bdi dir="ltr">{p.overlap.done.join(' · ')}</bdi>
+              </p>
+            </details>
+          )}
+          {p.overlap && p.overlap.pendingN > 0 && (
+            <details class="banner banner-warn" role="alert" data-testid="upload-overlap-pending">
+              <summary>
+                <Icon name="warning" size={22} /> {t('uploadOverlapPending', { n: p.overlap.pendingN })}
+              </summary>
+              <p class="mono">
+                <bdi dir="ltr">{p.overlap.pending.join(' · ')}</bdi>
+              </p>
+            </details>
           )}
           {p.bad.length > 0 && (
             <div class="banner banner-warn" role="alert" data-testid="upload-bad">
